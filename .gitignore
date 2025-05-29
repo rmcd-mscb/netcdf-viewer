@@ -1,0 +1,29 @@
+# Node
+node_modules/
+dist/
+out/
+build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+env/
+venv/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Editor
+*.swp
+*.swo

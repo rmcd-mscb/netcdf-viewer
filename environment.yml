@@ -1,0 +1,7 @@
+name: netcdf-viewer
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - xarray
+  - netcdf4
