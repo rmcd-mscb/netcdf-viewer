@@ -223,10 +223,12 @@ class NetCDFTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
     public readonly state: vscode.TreeItemCollapsibleState,
-    public readonly variable: any = undefined
+    public readonly variable: any = undefined,
+    public readonly contextValue: string = ""
   ) {
     super(label, state);
-    if (variable) {
+    this.contextValue = contextValue;
+    if (variable && !contextValue) {
       this.command = {
         command: "netcdf-viewer.showVariable",
         title: "Show Variable",
@@ -257,12 +259,9 @@ class NetCDFTreeProvider implements vscode.TreeDataProvider<NetCDFTreeItem> {
 
   async getChildren(element?: NetCDFTreeItem): Promise<NetCDFTreeItem[]> {
     const stored = this.context.workspaceState.get<any>("lastNetCDF");
-    if (!stored || !stored.dataset) {
-      return [];
-    }
+    if (!stored || !stored.dataset) return [];
     const ds = stored.dataset;
 
-    // Top-level: show sections
     if (!element) {
       return [
         new NetCDFTreeItem("Dimensions", vscode.TreeItemCollapsibleState.Collapsed),
@@ -271,50 +270,80 @@ class NetCDFTreeProvider implements vscode.TreeDataProvider<NetCDFTreeItem> {
       ];
     }
 
-    // Section children
     if (element.label === "Dimensions") {
-      // Show dimension names and their sizes
       return Object.entries(ds.dims || {}).map(
-        ([dim, size]: [string, any]) =>
+        ([dim, size]) =>
           new NetCDFTreeItem(`${dim} (${size})`, vscode.TreeItemCollapsibleState.None)
       );
     }
 
     if (element.label === "Coordinates") {
       return Object.entries(ds.coords || {}).map(
-        ([coordName, v]: [string, any]) =>
+        ([coordName, v]) =>
           new NetCDFTreeItem(
             coordName,
-            vscode.TreeItemCollapsibleState.None,
-            {
-              ...v,
-              name: coordName,
-              type: v.dtype,
-              dimensions: v.dims,
-              shape: v.shape,
-            }
+            vscode.TreeItemCollapsibleState.Collapsed,
+            { ...v, name: coordName },
+            "variable"
           )
       );
     }
 
     if (element.label === "Data Variables") {
       return Object.entries(ds.data_vars || {}).map(
-        ([varName, v]: [string, any]) =>
+        ([varName, v]) =>
           new NetCDFTreeItem(
             varName,
-            vscode.TreeItemCollapsibleState.None,
-            {
-              ...v,
-              name: varName,
-              type: v.dtype,
-              dimensions: v.dims,
-              shape: v.shape,
-            }
+            vscode.TreeItemCollapsibleState.Collapsed,
+            { ...v, name: varName },
+            "variable"
           )
       );
     }
 
-    // No children for leaf nodes
+    // If this is a variable, show its attributes and sample data as children
+    if (element.contextValue === "variable" && element.variable) {
+      return [
+        new NetCDFTreeItem(
+          "Attributes",
+          vscode.TreeItemCollapsibleState.Collapsed,
+          element.variable, // Pass the variable object here!
+          "attributes"
+        ),
+        new NetCDFTreeItem(
+          "Sample Data",
+          vscode.TreeItemCollapsibleState.Collapsed,
+          element.variable, // Pass the variable object here!
+          "sample"
+        ),
+      ];
+    }
+
+    // Show attribute children
+    if (element.contextValue === "attributes" && element.variable) {
+      return Object.entries(element.variable.attrs || {}).map(
+        ([k, v]) =>
+          new NetCDFTreeItem(
+            `${k}: ${JSON.stringify(v)}`,
+            vscode.TreeItemCollapsibleState.None
+          )
+      );
+    }
+
+    // Show sample data children
+    if (element.contextValue === "sample" && element.variable) {
+      const sampleData = Array.isArray(element.variable.sample_data)
+        ? element.variable.sample_data.slice(0, 10)
+        : [];
+      return sampleData.map(
+        (v, i) =>
+          new NetCDFTreeItem(
+            `[${i}]: ${v}`,
+            vscode.TreeItemCollapsibleState.None
+          )
+      );
+    }
+
     return [];
   }
 }

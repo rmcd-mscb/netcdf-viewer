@@ -40,6 +40,19 @@ try:
             d['data_vars'][varname]['sample_data'] = [convert(x) for x in sample]
         except Exception as e:
             d['data_vars'][varname]['sample_data'] = [str(e)]
+
+    # Add a sample of data for each coordinate variable
+    for coordname, coord in ds.coords.items():
+        try:
+            arr = coord.values
+            if arr.size > 10:
+                sample = arr.flat[:10]
+            else:
+                sample = arr.flat[:]
+            d['coords'][coordname]['sample_data'] = [convert(x) for x in sample]
+        except Exception as e:
+            d['coords'][coordname]['sample_data'] = [str(e)]
+
     print(json.dumps(d, default=convert))
 except Exception as e:
     print(json.dumps({"error": str(e)}))
