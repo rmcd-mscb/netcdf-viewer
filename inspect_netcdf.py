@@ -29,7 +29,8 @@ if len(sys.argv) < 2:
 try:
     ds = xr.open_dataset(sys.argv[1])
     d = ds.to_dict(data=False)  # Only metadata
-    # Add a sample of data for each variable
+
+    # Add a sample of data and encoding for each variable
     for varname, var in ds.data_vars.items():
         try:
             arr = var.values
@@ -40,8 +41,13 @@ try:
             d['data_vars'][varname]['sample_data'] = [convert(x) for x in sample]
         except Exception as e:
             d['data_vars'][varname]['sample_data'] = [str(e)]
+        # Add encoding
+        try:
+            d['data_vars'][varname]['encoding'] = {k: convert(v) for k, v in var.encoding.items()}
+        except Exception as e:
+            d['data_vars'][varname]['encoding'] = {"error": str(e)}
 
-    # Add a sample of data for each coordinate variable
+    # Add a sample of data and encoding for each coordinate variable
     for coordname, coord in ds.coords.items():
         try:
             arr = coord.values
@@ -52,6 +58,11 @@ try:
             d['coords'][coordname]['sample_data'] = [convert(x) for x in sample]
         except Exception as e:
             d['coords'][coordname]['sample_data'] = [str(e)]
+        # Add encoding
+        try:
+            d['coords'][coordname]['encoding'] = {k: convert(v) for k, v in coord.encoding.items()}
+        except Exception as e:
+            d['coords'][coordname]['encoding'] = {"error": str(e)}
 
     print(json.dumps(d, default=convert))
 except Exception as e:

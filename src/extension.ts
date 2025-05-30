@@ -296,22 +296,39 @@ export class NetCDFTreeProvider implements vscode.TreeDataProvider<NetCDFTreeIte
 			);
 		}
 
-		// If this is a variable, show its attributes and sample data as children
+		// If this is a variable, show its attributes, sample data, and encoding as children
 		if (element.contextValue === "variable" && element.variable) {
 			return [
 				new NetCDFTreeItem(
 					"Attributes",
 					vscode.TreeItemCollapsibleState.Collapsed,
-					element.variable, // Pass the variable object here!
+					element.variable,
 					"attributes"
 				),
 				new NetCDFTreeItem(
 					"Sample Data",
 					vscode.TreeItemCollapsibleState.Collapsed,
-					element.variable, // Pass the variable object here!
+					element.variable,
 					"sample"
 				),
+				new NetCDFTreeItem(
+					"Encoding",
+					vscode.TreeItemCollapsibleState.Collapsed,
+					element.variable,
+					"encoding"
+				),
 			];
+		}
+
+		// Show encoding children
+		if (element.contextValue === "encoding" && element.variable) {
+			return Object.entries(element.variable.encoding || {}).map(
+				([k, v]) =>
+					new NetCDFTreeItem(
+						`${k}: ${JSON.stringify(v)}`,
+						vscode.TreeItemCollapsibleState.None
+					)
+			);
 		}
 
 		// Show attribute children

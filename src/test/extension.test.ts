@@ -69,3 +69,59 @@ test('NetCDFTreeProvider returns dimension children', async () => {
     const dimLabels = dimChildren.map((item: any) => item.label);
     assert.deepStrictEqual(dimLabels, ['lat (2)', 'lon (3)']);
 });
+
+test('NetCDFTreeProvider shows attributes for variables', async () => {
+    const { NetCDFTreeProvider } = await import('../extension');
+    const mockContext = {
+        workspaceState: {
+            get: () => ({
+                dataset: {
+                    dims: {},
+                    coords: {
+                        time: {
+                            attrs: { standard_name: "time", axis: "T" },
+                            sample_data: [0, 1, 2],
+                            encoding: {}
+                        }
+                    },
+                    data_vars: {
+                        temp: {
+                            attrs: { units: "K", long_name: "Temperature" },
+                            sample_data: [273.15, 274.15],
+                            encoding: {}
+                        }
+                    }
+                }
+            })
+        }
+    };
+    const provider = new NetCDFTreeProvider(mockContext as any);
+    // Test for coordinate variable
+    const roots = await provider.getChildren();
+    const coordsNode = roots.find((item: any) => item.label === 'Coordinates');
+    const coordVars = await provider.getChildren(coordsNode);
+    const timeVar = coordVars.find((item: any) => item.label === 'time');
+    const timeChildren = await provider.getChildren(timeVar);
+    const attrsNode = timeChildren.find((item: any) => item.label === 'Attributes');
+    assert.ok(attrsNode, 'Attributes branch not found for coordinate variable');
+    const attrChildren = await provider.getChildren(attrsNode);
+    const attrLabels = attrChildren.map((item: any) => item.label);
+    assert.deepStrictEqual(attrLabels, [
+        'standard_name: "time"',
+        'axis: "T"'
+    ]);
+
+    // Test for data variable
+    const dataVarsNode = roots.find((item: any) => item.label === 'Data Variables');
+    const dataVars = await provider.getChildren(dataVarsNode);
+    const tempVar = dataVars.find((item: any) => item.label === 'temp');
+    const tempChildren = await provider.getChildren(tempVar);
+    const tempAttrsNode = tempChildren.find((item: any) => item.label === 'Attributes');
+    assert.ok(tempAttrsNode, 'Attributes branch not found for data variable');
+    const tempAttrChildren = await provider.getChildren(tempAttrsNode);
+    const tempAttrLabels = tempAttrChildren.map((item: any) => item.label);
+    assert.deepStrictEqual(tempAttrLabels, [
+        'units: "K"',
+        'long_name: "Temperature"'
+    ]);
+});
