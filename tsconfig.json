@@ -1,14 +1,11 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "outDir": "out",
+    "rootDir": "src",
     "module": "commonjs",
-    "rootDir": "src",        // your .ts sources
-    "outDir": "dist",        // match webpack output
-    "strict": true,
+    "target": "es6",
     "sourceMap": true,
-    "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["src"],
-  "exclude": ["src/test"]
+  "include": ["src"]
 }

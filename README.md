@@ -1,91 +1,138 @@
-# netcdf-viewer README
+# NetCDF Viewer for VS Code
 
-This is the README for your extension "netcdf-viewer". After writing up a brief description, we recommend including the following sections.
-
-## Features
-
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+**NetCDF Viewer** is a Visual Studio Code extension that lets you explore and inspect NetCDF files (`.nc`, `.nc4`, `.cdf`, `.h5`) directly within your editor. Designed for scientists, engineers, and data analysts, this extension provides a fast, interactive way to browse datasets, view metadata, and preview sample data—without leaving VS Code.
 
 ---
 
-# NetCDF Viewer VS Code Extension
+## ✨ Features
 
-## Python Environment Setup
+- **Browse NetCDF files** in a dedicated sidebar tree view
+- **Expand dimensions, coordinates, and data variables** just like in xarray
+- **View variable attributes and sample data** with a simple click
+- **No need for external tools**—all inspection is done in the editor
+- **Python-powered backend** for robust NetCDF parsing
 
-This extension requires Python with `xarray` and `netCDF4` installed.  
-We recommend using [Conda](https://docs.conda.io/en/latest/) for easy setup:
+---
 
-```sh
-conda env create -f environment.yml
-conda activate netcdf-viewer
-```
+## 📦 Installation
 
-If you use pip:
+### From the VS Code Marketplace
+
+1. Open the Extensions view (`Ctrl+Shift+X`).
+2. Search for **NetCDF Viewer**.
+3. Click **Install**.
+
+### From Source
+
+1. Clone this repository:
+
+   ```sh
+   git clone https://github.com/rmcd-mscb/netcdf-viewer.git
+   cd netcdf-viewer
+   ```
+
+2. Install dependencies:
+
+   ```sh
+   npm install
+   ```
+
+3. Open the folder in VS Code:
+
+   ```sh
+   code .
+   ```
+
+4. Press `F5` to launch the extension in a new Extension Development Host window.
+
+---
+
+## 🐍 Python Requirements
+
+This extension uses Python (via [xarray](https://xarray.dev/) and [netCDF4](https://unidata.github.io/netcdf4-python/)) to parse NetCDF files.
+
+**You must have:**
+
+- Python 3.7+
+- `xarray` and `netCDF4` installed in your Python environment
+
+Install them with:
 
 ```sh
 pip install xarray netCDF4
 ```
 
-**Configure the Python interpreter path in VS Code settings** (see below).
+If you use a custom Python path, set it in your VS Code settings:
 
-## Following extension guidelines
+```markdown
+"netcdfViewer.pythonPath": "/path/to/python"
+```
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+---
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+## 🚀 Usage
 
-## Working with Markdown
+1. **Open the NetCDF Viewer**  
+   Find the **NetCDF Explorer** in the Activity Bar or Side Bar.
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+2. **Open a NetCDF file**  
+   - Right-click a `.nc` file in the Explorer and select **Open in NetCDF Viewer**  
+   - Or use the command palette: `NetCDF Viewer: Open File…`
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+3. **Browse your data**  
+   - Expand **Dimensions**, **Coordinates**, and **Data Variables**.
+   - Click on a variable to expand and see its attributes and a sample of its data.
 
-## For more information
+---
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+## 🛠️ Development & Packaging
 
-**Enjoy!**
+This extension is written in TypeScript and uses a Python script for data extraction.
+
+**To package for VS Code:**
+
+1. Build the extension:
+
+   ```sh
+   npm run compile
+   ```
+
+2. Package it:
+
+   ```sh
+   npx vsce package
+   ```
+
+   This will create a `.vsix` file you can install or distribute.
+
+**To install a VSIX:**
+
+```sh
+code --install-extension netcdf-viewer-*.vsix
+```
+
+---
+
+## 💡 Why NetCDF Viewer?
+
+- No more switching between command-line tools and your editor
+- Instantly inspect large scientific datasets
+- Works cross-platform (Windows, macOS, Linux)
+- Familiar xarray-like organization
+
+---
+
+## 📝 Feedback & Issues
+
+Found a bug or have a feature request?  
+[Open an issue on GitHub](https://github.com/rmcd-mscb/netcdf-viewer/issues).
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+**Happy data exploring!**

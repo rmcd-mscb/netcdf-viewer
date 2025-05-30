@@ -1,5 +1,6 @@
 {
   "name": "netcdf-viewer",
+  "publisher": "rmcd-mscb",
   "displayName": "NetCDF Viewer",
   "description": "View NetCDF files and metadata",
   "version": "0.0.1",
@@ -9,9 +10,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-
-  ],
+  "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -63,20 +62,23 @@
   },
   "scripts": {
     "compile": "webpack --mode production",
+    "tsc": "tsc",
     "watch": "webpack --mode development --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint src",
-    "pretest": "npm run compile && npm run lint",
+    "pretest": "npm run compile && npm run lint && npm run tsc",
     "test": "vscode-test"
   },
-  "dependencies": {
-  },
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@types/vscode": "^1.60.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
     "eslint": "^9.27.0",
+    "mocha": "^11.5.0",
     "ts-loader": "^9.0.0",
     "typescript": "^5.0.0",
     "webpack": "^5.0.0",
