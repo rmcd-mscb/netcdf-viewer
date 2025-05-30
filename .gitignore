@@ -4,6 +4,7 @@ dist/
 out/
 build/
 .vscode-test/
+data/
 
 # Python
 __pycache__/
