@@ -131,7 +131,7 @@ Found a bug or have a feature request?
 
 ## 📄 License
 
-MIT License
+Please see [LICENSE.md](LICENSE.md) for details.
 
 ---
 

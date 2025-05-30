@@ -6,4 +6,24 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
-- Initial release
+## [0.0.1] - 2025-05-20
+
+### Added
+
+- Initial release of the NetCDF Viewer extension for VS Code.
+
+### Changed
+
+- Initial setup with basic command registration and activation logic.
+
+### Deprecated
+
+- No deprecated features in this release.
+
+### Removed
+
+- No features removed in this release.
+
+### Fixed
+
+- Initial setup with basic command registration and activation logic.

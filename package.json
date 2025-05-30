@@ -1,8 +1,12 @@
 {
   "name": "netcdf-viewer",
-  "publisher": "rmcd-mscb",
+  "publisher": "RichardMcDonald",
   "displayName": "NetCDF Viewer",
   "description": "View NetCDF files and metadata",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rmcd-mscb/netcdf-viewer.git"
+  },
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.60.0"
