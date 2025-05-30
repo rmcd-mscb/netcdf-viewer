@@ -135,4 +135,16 @@ MIT License
 
 ---
 
+## Contributing
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on setting up your development environment and making contributions.
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a history of changes to this project.
+
+---
+
 **Happy data exploring!**
