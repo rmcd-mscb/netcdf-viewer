@@ -3,6 +3,7 @@ node_modules/
 dist/
 out/
 build/
+.vscode-test/
 
 # Python
 __pycache__/
