@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ main ]
 
-jjobs:
+jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
