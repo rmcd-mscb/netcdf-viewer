@@ -35,6 +35,8 @@ export function activate(context: vscode.ExtensionContext) {
       });
       provider.refresh();
       await vscode.commands.executeCommand('workbench.view.explorer');
+      // Automatically open HTML view after loading
+      showDatasetHtmlView(context, xarrayDataset);
     } catch (e) {
       vscode.window.showErrorMessage('Failed to inspect NetCDF file: ' + e);
     }
@@ -115,11 +117,14 @@ function showVariableWebview(context: vscode.ExtensionContext, variable: any) {
 
 /** Opens a webview to display the entire dataset as an HTML table with collapsible sections. */
 function showDatasetHtmlView(context: vscode.ExtensionContext, dataset: any) {
-  const panel = vscode.window.createWebviewPanel('netcdfHtmlView', 'NetCDF HTML View', vscode.ViewColumn.One, {
-    enableScripts: true,
-  });
   const stored = context.workspaceState.get<any>('lastNetCDF');
   const fileName = stored && stored.uri ? require('path').basename(stored.uri.fsPath) : 'NetCDF File';
+  const panel = vscode.window.createWebviewPanel(
+    'netcdfHtmlView',
+    fileName, // Use the filename as the tab heading
+    vscode.ViewColumn.One,
+    { enableScripts: true }
+  );
   panel.webview.html = getDatasetHtml(panel.webview, dataset, fileName);
 }
 
@@ -132,10 +137,10 @@ function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string 
     const children = Object.entries(node)
       .map(([k, v]) => renderTree(v, k, indent + 1))
       .join('');
-    return `<details open>
-      <summary style="padding-left:${indent * 20}px">${label}</summary>
-      ${children}
-    </details>`;
+    return `<details>
+    <summary style="padding-left:${indent * 20}px">${label}</summary>
+    ${children}
+  </details>`;
   }
 
   // Prepare ordered branches
@@ -156,7 +161,7 @@ function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string 
     </style>
   </head>
   <body>
-    <h1>NetCDF Dataset</h1>
+    <h1>🔍 NetCDF Structure Viewer</h1>
     <details open>
       <summary style="font-size:1.2em;">${fileName}</summary>
       ${dims}
