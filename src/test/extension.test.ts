@@ -130,7 +130,20 @@ test('NetCDFTreeProvider shows attributes for variables', async () => {
   assert.ok(tempAttrsNode, 'Attributes branch not found for data variable');
   const tempAttrChildren = await provider.getChildren(tempAttrsNode);
   const tempAttrLabels = tempAttrChildren.map((item: any) => item.label);
-  assert.deepStrictEqual(tempAttrLabels, ['units: "K"', 'long_name: "Temperature"']);
+assert.deepStrictEqual(tempAttrLabels, ['units: "K"', 'long_name: "Temperature"']);
+});
+
+test('NetCDFTreeProvider returns empty array when no dataset', async () => {
+  const { NetCDFTreeProvider } = await import('../extension');
+  const mockContext = {
+    workspaceState: {
+      get: () => undefined,
+    },
+  };
+
+  const provider = new NetCDFTreeProvider(mockContext as any);
+  const children = await provider.getChildren();
+  assert.deepStrictEqual(children, []);
 });
 
 test('NetCDFTreeProvider shows file name as root', async () => {
