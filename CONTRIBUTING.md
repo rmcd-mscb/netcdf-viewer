@@ -18,6 +18,7 @@ This guide will help you set up your development environment and follow our codi
 
    ```sh
    npm install
+   npx husky install
    ```
 
 3. **Install Python dependencies (for NetCDF inspection):**

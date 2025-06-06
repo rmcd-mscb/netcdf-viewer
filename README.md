@@ -29,11 +29,16 @@
 
 2. Open a NetCDF file in the editor.
    - from the Welcome page, click on the "Open NetCDF File" button
-  ![NetCDF Viewer Open File Demo](media\Select_netcdf_file_1.gif)
+
+      ![NetCDF Viewer Open File Demo](media/Select_netcdf_file_1.gif)
+
    - or right-click a `.nc` file in the Explorer and select **Open in NetCDF Viewer**
-  ![NetCDF Viewer Open File Demo - right-click](media\Select_netcdf_file_2.gif)
+
+      ![NetCDF Viewer Open File Demo - right-click](media/Select_netcdf_file_2.gif)
+
    - or use the command palette: `NetCDF Viewer: Open File…`
-  ![NetCDF Viewer Open File Demo - command palette](media\Select_netcdf_file_3.gif)
+
+      ![NetCDF Viewer Open File Demo - command palette](media/Select_netcdf_file_3.gif)
 
 ## 📦 Installation
 
