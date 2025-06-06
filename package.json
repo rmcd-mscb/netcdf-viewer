@@ -3,6 +3,7 @@
   "publisher": "RichardMcDonald",
   "displayName": "NetCDF Viewer",
   "description": "View NetCDF files and metadata",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/rmcd-mscb/netcdf-viewer.git"
