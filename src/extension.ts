@@ -59,6 +59,20 @@ export function activate(context: vscode.ExtensionContext) {
   });
   context.subscriptions.push(selectPythonEnvCmd);
 
+  // Register command to show dataset in an HTML view
+  const showHtmlCmd = vscode.commands.registerCommand(
+    'netcdf-viewer.showHtmlView',
+    () => {
+      const stored = context.workspaceState.get<any>('lastNetCDF');
+      if (!stored || !stored.dataset) {
+        vscode.window.showWarningMessage('No NetCDF file loaded.');
+        return;
+      }
+      showDatasetHtmlView(context, stored.dataset);
+    }
+  );
+  context.subscriptions.push(showHtmlCmd);
+
   // 3) Register TreeDataProvider for NetCDF Explorer
   const provider = new NetCDFTreeProvider(context);
   vscode.window.registerTreeDataProvider('netcdfExplorer', provider);
@@ -100,6 +114,91 @@ function showVariableWebview(context: vscode.ExtensionContext, variable: any) {
       vscode.window.showInformationMessage(msg.text);
     }
   });
+}
+
+/** Opens a webview to display the entire dataset as an HTML table with collapsible sections. */
+function showDatasetHtmlView(
+  context: vscode.ExtensionContext,
+  dataset: any
+) {
+  const panel = vscode.window.createWebviewPanel(
+    'netcdfHtmlView',
+    'NetCDF HTML View',
+    vscode.ViewColumn.One,
+    { enableScripts: true }
+  );
+
+  panel.webview.html = getDatasetHtml(panel.webview, dataset);
+}
+
+/** Returns HTML markup for the dataset using nested <details> elements. */
+function getDatasetHtml(webview: vscode.Webview, dataset: any): string {
+  const escape = (s: any) =>
+    String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  const objectTable = (obj: any) =>
+    Object.entries(obj || {})
+      .map(([k, v]) => `<tr><td>${escape(k)}</td><td>${escape(v)}</td></tr>`) 
+      .join('');
+
+  const variableDetails = (name: string, variable: any) => {
+    const attrs = objectTable(variable.attrs);
+    const enc = objectTable(variable.encoding);
+    const sample = Array.isArray(variable.sample_data)
+      ? variable.sample_data
+          .slice(0, 10)
+          .map((v: any, i: number) => `<tr><td>[${i}]</td><td>${escape(v)}</td></tr>`)
+          .join('')
+      : '';
+    return `<details><summary>${escape(name)}</summary>
+        <details><summary>Attributes</summary><table>${
+          attrs || '<tr><td colspan="2"><em>No attributes</em></td></tr>'
+        }</table></details>
+        <details><summary>Sample Data</summary><table>${
+          sample || '<tr><td colspan="2"><em>No sample</em></td></tr>'
+        }</table></details>
+        <details><summary>Encoding</summary><table>${
+          enc || '<tr><td colspan="2"><em>No encoding</em></td></tr>'
+        }</table></details>
+    </details>`;
+  };
+
+  const dimsTable = Object.entries(dataset.dims || {})
+    .map(([k, v]) => `<tr><td>${escape(k)}</td><td>${escape(v)}</td></tr>`)
+    .join('');
+
+  const coords = Object.entries(dataset.coords || {})
+    .map(([k, v]) => variableDetails(k, v))
+    .join('');
+
+  const vars = Object.entries(dataset.data_vars || {})
+    .map(([k, v]) => variableDetails(k, v))
+    .join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource};">
+  <style>
+    body { font-family: sans-serif; padding: 16px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 8px; }
+    td, th { border: 1px solid #ccc; padding: 4px; }
+    summary { cursor: pointer; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>NetCDF Dataset</h1>
+  <details open><summary>Dimensions</summary><table>${dimsTable}</table></details>
+  <details><summary>Coordinates</summary>${coords}</details>
+  <details><summary>Data Variables</summary>${vars}</details>
+</body>
+</html>`;
 }
 
 /**
