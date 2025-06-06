@@ -118,83 +118,55 @@ function showDatasetHtmlView(context: vscode.ExtensionContext, dataset: any) {
   const panel = vscode.window.createWebviewPanel('netcdfHtmlView', 'NetCDF HTML View', vscode.ViewColumn.One, {
     enableScripts: true,
   });
-
-  panel.webview.html = getDatasetHtml(panel.webview, dataset);
+  const stored = context.workspaceState.get<any>('lastNetCDF');
+  const fileName = stored && stored.uri ? require('path').basename(stored.uri.fsPath) : 'NetCDF File';
+  panel.webview.html = getDatasetHtml(panel.webview, dataset, fileName);
 }
 
-/** Returns HTML markup for the dataset using nested <details> elements. */
-function getDatasetHtml(webview: vscode.Webview, dataset: any): string {
-  const escape = (s: any) =>
-    String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-
-  // Helper for tables with indentation
-  const objectTable = (obj: any, indent = 0) =>
-    `<table style="margin-left:${indent * 20}px">${Object.entries(obj || {})
-      .map(([k, v]) => `<tr><td>${escape(k)}</td><td>${escape(v)}</td></tr>`)
-      .join('')}</table>`;
-
-  // Recursive variable details with indentation
-  const variableDetails = (name: string, variable: any, indent = 0) => {
-    const attrs = Object.keys(variable.attrs || {}).length
-      ? objectTable(variable.attrs, indent + 1)
-      : `<div style="margin-left:${(indent + 1) * 20}px"><em>No attributes</em></div>`;
-    const enc = Object.keys(variable.encoding || {}).length
-      ? objectTable(variable.encoding, indent + 1)
-      : `<div style="margin-left:${(indent + 1) * 20}px"><em>No encoding</em></div>`;
-    const sample =
-      Array.isArray(variable.sample_data) && variable.sample_data.length
-        ? `<table style="margin-left:${(indent + 1) * 20}px">${variable.sample_data
-            .slice(0, 10)
-            .map(
-              (v: any, i: number) =>
-                `<tr><td>[${i}]</td><td>${escape(v)}</td></tr>`
-            )
-            .join('')}</table>`
-        : `<div style="margin-left:${(indent + 1) * 20}px"><em>No sample</em></div>`;
-    return `<details style="margin-left:${indent * 20}px"><summary>${escape(name)}</summary>
-      <details style="margin-left:${(indent + 1) * 20}px"><summary>Attributes</summary>${attrs}</details>
-      <details style="margin-left:${(indent + 1) * 20}px"><summary>Sample Data</summary>${sample}</details>
-      <details style="margin-left:${(indent + 1) * 20}px"><summary>Encoding</summary>${enc}</details>
+/** Returns HTML markup for the dataset using nested <details> elements, ordered and labeled. */
+function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string = 'NetCDF File'): string {
+  function renderTree(node: any, label: string, indent = 0): string {
+    if (typeof node !== 'object' || node === null) {
+      return `<div style="padding-left:${indent * 20}px">${label}: <span class="val">${node}</span></div>`;
+    }
+    const children = Object.entries(node)
+      .map(([k, v]) => renderTree(v, k, indent + 1))
+      .join('');
+    return `<details open>
+      <summary style="padding-left:${indent * 20}px">${label}</summary>
+      ${children}
     </details>`;
-  };
+  }
 
-  const dimsTable = `<table style="margin-left:20px">${Object.entries(dataset.dims || {})
-    .map(([k, v]) => `<tr><td>${escape(k)}</td><td>${escape(v)}</td></tr>`)
-    .join('')}</table>`;
+  // Prepare ordered branches
+  const dims = dataset.dims ? renderTree(dataset.dims, 'Dimensions', 1) : '';
+  const coords = dataset.coords ? renderTree(dataset.coords, 'Coordinates', 1) : '';
+  const dataVars = dataset.data_vars ? renderTree(dataset.data_vars, 'Data Variables', 1) : '';
+  const globalAttrs = dataset.attrs ? renderTree(dataset.attrs, 'Global Attributes', 1) : '';
 
-  const coords = Object.entries(dataset.coords || {})
-    .map(([k, v]) => variableDetails(k, v, 1))
-    .join('');
-
-  const vars = Object.entries(dataset.data_vars || {})
-    .map(([k, v]) => variableDetails(k, v, 1))
-    .join('');
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource};">
-  <style>
-    body { font-family: sans-serif; padding: 16px; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 8px; }
-    td, th { border: 1px solid #ccc; padding: 4px; }
-    summary { cursor: pointer; font-weight: bold; }
-    details { margin-bottom: 6px; }
-  </style>
-</head>
-<body>
-  <h1>NetCDF Dataset</h1>
-  <details open><summary>Dimensions</summary>${dimsTable}</details>
-  <details open><summary>Coordinates</summary>${coords}</details>
-  <details open><summary>Data Variables</summary>${vars}</details>
-</body>
-</html>`;
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <style>
+      body { font-family: sans-serif; padding: 16px; }
+      summary { font-weight: bold; cursor: pointer; }
+      details { margin-bottom: 8px; }
+      .val { color: #333; }
+    </style>
+  </head>
+  <body>
+    <h1>NetCDF Dataset</h1>
+    <details open>
+      <summary style="font-size:1.2em;">${fileName}</summary>
+      ${dims}
+      ${coords}
+      ${dataVars}
+      ${globalAttrs}
+    </details>
+  </body>
+  </html>
+  `;
 }
 
 /**
