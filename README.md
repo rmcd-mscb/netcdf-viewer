@@ -16,7 +16,7 @@
 
 ## Demonstration
 
-1. From the Command Pallete, type `netcdf-viewer.selectPythonEnv` to select your Python environment.
+1. From the Command Palette, type `netcdf-viewer.selectPythonEnv` to select your Python environment.
 2. Open a NetCDF file in the editor.
    - from the Welcome page, click on the "Open NetCDF File" button
    - or right-click a `.nc` file in the Explorer and select **Open in NetCDF Viewer**
