@@ -35,6 +35,8 @@ export function activate(context: vscode.ExtensionContext) {
       });
       provider.refresh();
       await vscode.commands.executeCommand('workbench.view.explorer');
+      // Automatically open HTML view after loading
+      showDatasetHtmlView(context, xarrayDataset);
     } catch (e) {
       vscode.window.showErrorMessage('Failed to inspect NetCDF file: ' + e);
     }
@@ -115,86 +117,123 @@ function showVariableWebview(context: vscode.ExtensionContext, variable: any) {
 
 /** Opens a webview to display the entire dataset as an HTML table with collapsible sections. */
 function showDatasetHtmlView(context: vscode.ExtensionContext, dataset: any) {
-  const panel = vscode.window.createWebviewPanel('netcdfHtmlView', 'NetCDF HTML View', vscode.ViewColumn.One, {
-    enableScripts: true,
-  });
-
-  panel.webview.html = getDatasetHtml(panel.webview, dataset);
+  const stored = context.workspaceState.get<any>('lastNetCDF');
+  const fileName = stored && stored.uri ? require('path').basename(stored.uri.fsPath) : 'NetCDF File';
+  const panel = vscode.window.createWebviewPanel(
+    'netcdfHtmlView',
+    fileName, // Use the filename as the tab heading
+    vscode.ViewColumn.One,
+    { enableScripts: true }
+  );
+  panel.webview.html = getDatasetHtml(panel.webview, dataset, fileName);
 }
 
-/** Returns HTML markup for the dataset using nested <details> elements. */
-function getDatasetHtml(webview: vscode.Webview, dataset: any): string {
-  const escape = (s: any) =>
-    String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+/** Returns HTML markup for the dataset using nested <details> elements, ordered and labeled. */
+function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string = 'NetCDF File'): string {
+  const alwaysExpandable = new Set(['dtype', 'shape', 'dims', 'encoding']);
+  function getSampleSlice(shape: number[] | undefined, sampleCount: number = 10): string {
+    if (!shape || shape.length === 0) {
+      return '';
+    }
+    let remaining = sampleCount;
+    const slices = [];
+    for (let i = 0; i < shape.length; ++i) {
+      if (remaining <= 0) {
+        slices.push('0:1');
+        continue;
+      }
+      let thisDim = 1;
+      for (let j = i + 1; j < shape.length; ++j) {
+        thisDim *= shape[j];
+      }
+      let count = Math.min(shape[i], Math.ceil(remaining / thisDim));
+      slices.push(`0:${count}`);
+      remaining = Math.floor(remaining / count);
+    }
+    return `[${slices.join(', ')}]`;
+  }
 
-  // Helper for tables with indentation
-  const objectTable = (obj: any, indent = 0) =>
-    `<table style="margin-left:${indent * 20}px">${Object.entries(obj || {})
-      .map(([k, v]) => `<tr><td>${escape(k)}</td><td>${escape(v)}</td></tr>`)
-      .join('')}</table>`;
+  function renderTree(node: any, label: string, indent = 0, parent?: any): string {
+    // Special handling for sample_data
+    let displayLabel = label;
+    if (label === 'sample_data' && Array.isArray(node) && parent && (parent.shape || parent.dims)) {
+      const shape = parent.shape || (parent.dims ? parent.dims.map((d: string) => parent[d]?.length || 0) : []);
+      const sampleSlice = getSampleSlice(shape, node.length);
+      displayLabel = `sample_data ${sampleSlice}`;
+    }
 
-  // Recursive variable details with indentation
-  const variableDetails = (name: string, variable: any, indent = 0) => {
-    const attrs = Object.keys(variable.attrs || {}).length
-      ? objectTable(variable.attrs, indent + 1)
-      : `<div style="margin-left:${(indent + 1) * 20}px"><em>No attributes</em></div>`;
-    const enc = Object.keys(variable.encoding || {}).length
-      ? objectTable(variable.encoding, indent + 1)
-      : `<div style="margin-left:${(indent + 1) * 20}px"><em>No encoding</em></div>`;
-    const sample =
-      Array.isArray(variable.sample_data) && variable.sample_data.length
-        ? `<table style="margin-left:${(indent + 1) * 20}px">${variable.sample_data
-            .slice(0, 10)
-            .map(
-              (v: any, i: number) =>
-                `<tr><td>[${i}]</td><td>${escape(v)}</td></tr>`
-            )
-            .join('')}</table>`
-        : `<div style="margin-left:${(indent + 1) * 20}px"><em>No sample</em></div>`;
-    return `<details style="margin-left:${indent * 20}px"><summary>${escape(name)}</summary>
-      <details style="margin-left:${(indent + 1) * 20}px"><summary>Attributes</summary>${attrs}</details>
-      <details style="margin-left:${(indent + 1) * 20}px"><summary>Sample Data</summary>${sample}</details>
-      <details style="margin-left:${(indent + 1) * 20}px"><summary>Encoding</summary>${enc}</details>
+    // Always expandable for certain keys, even if primitive
+    if (alwaysExpandable.has(label)) {
+      let content = '';
+      if (typeof node === 'object' && node !== null) {
+        content = Object.entries(node)
+          .map(([k, v]) => renderTree(v, k, indent + 1, node))
+          .join('');
+      } else {
+        content = `<div style="padding-left:${(indent + 1) * 20}px"><span class="val">${node}</span></div>`;
+      }
+      return `<details>
+        <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
+        ${content}
+      </details>`;
+    }
+
+    // For plain objects, render as expandable
+    if (typeof node === 'object' && node !== null && !Array.isArray(node)) {
+      const children = Object.entries(node)
+        .map(([k, v]) => renderTree(v, k, indent + 1, node))
+        .join('');
+      return `<details>
+      <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
+      ${children}
     </details>`;
-  };
+    }
 
-  const dimsTable = `<table style="margin-left:20px">${Object.entries(dataset.dims || {})
-    .map(([k, v]) => `<tr><td>${escape(k)}</td><td>${escape(v)}</td></tr>`)
-    .join('')}</table>`;
+    // For arrays, show a preview (first 10 values)
+    if (Array.isArray(node)) {
+      const preview = node
+        .slice(0, 10)
+        .map((v, i) => `<div style="padding-left:${(indent + 1) * 20}px">[${i}]: <span class="val">${v}</span></div>`)
+        .join('');
+      return `<details>
+      <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
+      ${preview}
+    </details>`;
+    }
 
-  const coords = Object.entries(dataset.coords || {})
-    .map(([k, v]) => variableDetails(k, v, 1))
-    .join('');
+    // For primitives, just show as a line
+    return `<div style="padding-left:${indent * 20}px">${displayLabel}: <span class="val">${node}</span></div>`;
+  }
 
-  const vars = Object.entries(dataset.data_vars || {})
-    .map(([k, v]) => variableDetails(k, v, 1))
-    .join('');
+  // Prepare ordered branches
+  const dims = dataset.dims ? renderTree(dataset.dims, 'Dimensions', 1) : '';
+  const coords = dataset.coords ? renderTree(dataset.coords, 'Coordinates', 1) : '';
+  const dataVars = dataset.data_vars ? renderTree(dataset.data_vars, 'Data Variables', 1) : '';
+  const globalAttrs = dataset.attrs ? renderTree(dataset.attrs, 'Global Attributes', 1) : '';
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource};">
-  <style>
-    body { font-family: sans-serif; padding: 16px; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 8px; }
-    td, th { border: 1px solid #ccc; padding: 4px; }
-    summary { cursor: pointer; font-weight: bold; }
-    details { margin-bottom: 6px; }
-  </style>
-</head>
-<body>
-  <h1>NetCDF Dataset</h1>
-  <details open><summary>Dimensions</summary>${dimsTable}</details>
-  <details open><summary>Coordinates</summary>${coords}</details>
-  <details open><summary>Data Variables</summary>${vars}</details>
-</body>
-</html>`;
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <style>
+      body { font-family: sans-serif; padding: 16px; }
+      summary { font-weight: bold; cursor: pointer; }
+      details { margin-bottom: 8px; }
+      .val { color: #333; }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 NetCDF Structure Viewer</h1>
+    <details>
+      <summary style="font-size:1.2em;">${fileName}</summary>
+      ${dims}
+      ${coords}
+      ${dataVars}
+      ${globalAttrs}
+    </details>
+  </body>
+  </html>
+  `;
 }
 
 /**
@@ -222,6 +261,31 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
     rawData = variable.sample_data;
   }
   const sampleData = rawData.slice(0, 10);
+
+  // Add the sample slice function
+  function getSampleSlice(shape: number[] | undefined, sampleCount: number = 10): string {
+    if (!shape || shape.length === 0) {
+      return '';
+    }
+    let remaining = sampleCount;
+    const slices = [];
+    for (let i = 0; i < shape.length; ++i) {
+      if (remaining <= 0) {
+        slices.push('0:1');
+        continue;
+      }
+      let thisDim = 1;
+      for (let j = i + 1; j < shape.length; ++j) {
+        thisDim *= shape[j];
+      }
+      let count = Math.min(shape[i], Math.ceil(remaining / thisDim));
+      slices.push(`0:${count}`);
+      remaining = Math.floor(remaining / count);
+    }
+    return `[${slices.join(', ')}]`;
+  }
+  const shape = variable.shape || (variable.dims ? variable.dims.map((d: string) => variable[d]?.length || 0) : []);
+  const sampleSlice = getSampleSlice(shape, sampleData.length);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -253,7 +317,9 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
         ${attrsStr || '<tr><td colspan="2"><em>No attributes</em></td></tr>'}
     </table>
 
-    <h2>Sample Data (first ${sampleData.length} values)</h2>
+    <h2>
+      Sample Data${sampleSlice ? ` ${sampleSlice}` : ''} (first ${sampleData.length} values)
+    </h2>
 ${
   sampleData.length > 0
     ? `
