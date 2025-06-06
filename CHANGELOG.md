@@ -6,6 +6,15 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.0.2] - 2025-06-01
+
+### Added
+
+- Added top level branch with file name.
+- New command to set python path for NetCDF Viewer.
+
+
+
 ## [0.0.1] - 2025-05-20
 
 ### Added
