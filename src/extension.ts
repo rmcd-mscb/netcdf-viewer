@@ -208,7 +208,7 @@ ${
 }
 
 /**
- * Represents a variable in the NetCDF Explorer view.
+ * Represents an item in the NetCDF Explorer view.
  */
 class NetCDFTreeItem extends vscode.TreeItem {
   constructor(
