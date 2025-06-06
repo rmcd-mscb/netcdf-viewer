@@ -60,17 +60,14 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(selectPythonEnvCmd);
 
   // Register command to show dataset in an HTML view
-  const showHtmlCmd = vscode.commands.registerCommand(
-    'netcdf-viewer.showHtmlView',
-    () => {
-      const stored = context.workspaceState.get<any>('lastNetCDF');
-      if (!stored || !stored.dataset) {
-        vscode.window.showWarningMessage('No NetCDF file loaded.');
-        return;
-      }
-      showDatasetHtmlView(context, stored.dataset);
+  const showHtmlCmd = vscode.commands.registerCommand('netcdf-viewer.showHtmlView', () => {
+    const stored = context.workspaceState.get<any>('lastNetCDF');
+    if (!stored || !stored.dataset) {
+      vscode.window.showWarningMessage('No NetCDF file loaded.');
+      return;
     }
-  );
+    showDatasetHtmlView(context, stored.dataset);
+  });
   context.subscriptions.push(showHtmlCmd);
 
   // 3) Register TreeDataProvider for NetCDF Explorer
@@ -117,16 +114,10 @@ function showVariableWebview(context: vscode.ExtensionContext, variable: any) {
 }
 
 /** Opens a webview to display the entire dataset as an HTML table with collapsible sections. */
-function showDatasetHtmlView(
-  context: vscode.ExtensionContext,
-  dataset: any
-) {
-  const panel = vscode.window.createWebviewPanel(
-    'netcdfHtmlView',
-    'NetCDF HTML View',
-    vscode.ViewColumn.One,
-    { enableScripts: true }
-  );
+function showDatasetHtmlView(context: vscode.ExtensionContext, dataset: any) {
+  const panel = vscode.window.createWebviewPanel('netcdfHtmlView', 'NetCDF HTML View', vscode.ViewColumn.One, {
+    enableScripts: true,
+  });
 
   panel.webview.html = getDatasetHtml(panel.webview, dataset);
 }
@@ -141,43 +132,47 @@ function getDatasetHtml(webview: vscode.Webview, dataset: any): string {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
 
-  const objectTable = (obj: any) =>
-    Object.entries(obj || {})
-      .map(([k, v]) => `<tr><td>${escape(k)}</td><td>${escape(v)}</td></tr>`) 
-      .join('');
+  // Helper for tables with indentation
+  const objectTable = (obj: any, indent = 0) =>
+    `<table>${Object.entries(obj || {})
+      .map(([k, v]) => `<tr><td style="padding-left:${indent * 20}px">${escape(k)}</td><td>${escape(v)}</td></tr>`)
+      .join('')}</table>`;
 
-  const variableDetails = (name: string, variable: any) => {
-    const attrs = objectTable(variable.attrs);
-    const enc = objectTable(variable.encoding);
-    const sample = Array.isArray(variable.sample_data)
-      ? variable.sample_data
-          .slice(0, 10)
-          .map((v: any, i: number) => `<tr><td>[${i}]</td><td>${escape(v)}</td></tr>`)
-          .join('')
-      : '';
-    return `<details><summary>${escape(name)}</summary>
-        <details><summary>Attributes</summary><table>${
-          attrs || '<tr><td colspan="2"><em>No attributes</em></td></tr>'
-        }</table></details>
-        <details><summary>Sample Data</summary><table>${
-          sample || '<tr><td colspan="2"><em>No sample</em></td></tr>'
-        }</table></details>
-        <details><summary>Encoding</summary><table>${
-          enc || '<tr><td colspan="2"><em>No encoding</em></td></tr>'
-        }</table></details>
+  // Recursive variable details with indentation
+  const variableDetails = (name: string, variable: any, indent = 0) => {
+    const attrs = Object.keys(variable.attrs || {}).length
+      ? objectTable(variable.attrs, indent + 2)
+      : `<div style="padding-left:${(indent + 2) * 20}px"><em>No attributes</em></div>`;
+    const enc = Object.keys(variable.encoding || {}).length
+      ? objectTable(variable.encoding, indent + 2)
+      : `<div style="padding-left:${(indent + 2) * 20}px"><em>No encoding</em></div>`;
+    const sample =
+      Array.isArray(variable.sample_data) && variable.sample_data.length
+        ? `<table>${variable.sample_data
+            .slice(0, 10)
+            .map(
+              (v: any, i: number) =>
+                `<tr><td style="padding-left:${(indent + 2) * 20}px">[${i}]</td><td>${escape(v)}</td></tr>`
+            )
+            .join('')}</table>`
+        : `<div style="padding-left:${(indent + 2) * 20}px"><em>No sample</em></div>`;
+    return `<details style="margin-left:${indent * 20}px"><summary>${escape(name)}</summary>
+      <details style="margin-left:${(indent + 1) * 20}px"><summary>Attributes</summary>${attrs}</details>
+      <details style="margin-left:${(indent + 1) * 20}px"><summary>Sample Data</summary>${sample}</details>
+      <details style="margin-left:${(indent + 1) * 20}px"><summary>Encoding</summary>${enc}</details>
     </details>`;
   };
 
-  const dimsTable = Object.entries(dataset.dims || {})
-    .map(([k, v]) => `<tr><td>${escape(k)}</td><td>${escape(v)}</td></tr>`)
-    .join('');
+  const dimsTable = `<table>${Object.entries(dataset.dims || {})
+    .map(([k, v]) => `<tr><td style="padding-left:20px">${escape(k)}</td><td>${escape(v)}</td></tr>`)
+    .join('')}</table>`;
 
   const coords = Object.entries(dataset.coords || {})
-    .map(([k, v]) => variableDetails(k, v))
+    .map(([k, v]) => variableDetails(k, v, 1))
     .join('');
 
   const vars = Object.entries(dataset.data_vars || {})
-    .map(([k, v]) => variableDetails(k, v))
+    .map(([k, v]) => variableDetails(k, v, 1))
     .join('');
 
   return `<!DOCTYPE html>
@@ -190,13 +185,14 @@ function getDatasetHtml(webview: vscode.Webview, dataset: any): string {
     table { border-collapse: collapse; width: 100%; margin-bottom: 8px; }
     td, th { border: 1px solid #ccc; padding: 4px; }
     summary { cursor: pointer; font-weight: bold; }
+    details { margin-bottom: 6px; }
   </style>
 </head>
 <body>
   <h1>NetCDF Dataset</h1>
-  <details open><summary>Dimensions</summary><table>${dimsTable}</table></details>
-  <details><summary>Coordinates</summary>${coords}</details>
-  <details><summary>Data Variables</summary>${vars}</details>
+  <details open><summary>Dimensions</summary>${dimsTable}</details>
+  <details open><summary>Coordinates</summary>${coords}</details>
+  <details open><summary>Data Variables</summary>${vars}</details>
 </body>
 </html>`;
 }
