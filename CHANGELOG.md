@@ -13,11 +13,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added top level branch with file name.
 - New command to set python path for NetCDF Viewer.
 
-
-
 ## [0.0.1] - 2025-05-20
 
-### Added
+### Features
 
 - Initial release of the NetCDF Viewer extension for VS Code.
 
