@@ -130,6 +130,7 @@ function showDatasetHtmlView(context: vscode.ExtensionContext, dataset: any) {
 
 /** Returns HTML markup for the dataset using nested <details> elements, ordered and labeled. */
 function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string = 'NetCDF File'): string {
+  const alwaysExpandable = new Set(['dtype', 'shape', 'dims', 'encoding']);
   function getSampleSlice(shape: number[] | undefined, sampleCount: number = 10): string {
     if (!shape || shape.length === 0) {
       return '';
@@ -161,32 +162,47 @@ function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string 
       displayLabel = `sample_data ${sampleSlice}`;
     }
 
-    // Special rendering for "Attributes" branch
-    if (label === 'Attributes' && typeof node === 'object' && node !== null) {
-      const attrsList = Object.entries(node)
+    // Always expandable for certain keys, even if primitive
+    if (alwaysExpandable.has(label)) {
+      let content = '';
+      if (typeof node === 'object' && node !== null) {
+        content = Object.entries(node)
+          .map(([k, v]) => renderTree(v, k, indent + 1, node))
+          .join('');
+      } else {
+        content = `<div style="padding-left:${(indent + 1) * 20}px"><span class="val">${node}</span></div>`;
+      }
+      return `<details>
+        <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
+        ${content}
+      </details>`;
+    }
+
+    // For plain objects, render as expandable
+    if (typeof node === 'object' && node !== null && !Array.isArray(node)) {
+      const children = Object.entries(node)
         .map(([k, v]) => renderTree(v, k, indent + 1, node))
         .join('');
       return `<details>
-      <summary style="padding-left:${indent * 20}px">${label}</summary>
-      ${attrsList}
+      <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
+      ${children}
     </details>`;
     }
 
-    // Always render as expandable, even for primitives
-    if (typeof node !== 'object' || node === null) {
+    // For arrays, show a preview (first 10 values)
+    if (Array.isArray(node)) {
+      const preview = node
+        .slice(0, 10)
+        .map((v, i) => `<div style="padding-left:${(indent + 1) * 20}px">[${i}]: <span class="val">${v}</span></div>`)
+        .join('');
       return `<details>
       <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
-      <div style="padding-left:${(indent + 1) * 20}px"><span class="val">${node}</span></div>
+      ${preview}
     </details>`;
     }
 
-    const children = Object.entries(node)
-      .map(([k, v]) => renderTree(v, k, indent + 1, node))
-      .join('');
-    return `<details>
-    <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
-    ${children}
-  </details>`;
+    // For primitives, just show as a line
+    return `<div style="padding-left:${indent * 20}px">${displayLabel}: <span class="val">${node}</span></div>`;
   }
 
   // Prepare ordered branches
