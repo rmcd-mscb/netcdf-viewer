@@ -134,28 +134,28 @@ function getDatasetHtml(webview: vscode.Webview, dataset: any): string {
 
   // Helper for tables with indentation
   const objectTable = (obj: any, indent = 0) =>
-    `<table>${Object.entries(obj || {})
-      .map(([k, v]) => `<tr><td style="padding-left:${indent * 20}px">${escape(k)}</td><td>${escape(v)}</td></tr>`)
+    `<table style="margin-left:${indent * 20}px">${Object.entries(obj || {})
+      .map(([k, v]) => `<tr><td>${escape(k)}</td><td>${escape(v)}</td></tr>`)
       .join('')}</table>`;
 
   // Recursive variable details with indentation
   const variableDetails = (name: string, variable: any, indent = 0) => {
     const attrs = Object.keys(variable.attrs || {}).length
-      ? objectTable(variable.attrs, indent + 2)
-      : `<div style="padding-left:${(indent + 2) * 20}px"><em>No attributes</em></div>`;
+      ? objectTable(variable.attrs, indent + 1)
+      : `<div style="margin-left:${(indent + 1) * 20}px"><em>No attributes</em></div>`;
     const enc = Object.keys(variable.encoding || {}).length
-      ? objectTable(variable.encoding, indent + 2)
-      : `<div style="padding-left:${(indent + 2) * 20}px"><em>No encoding</em></div>`;
+      ? objectTable(variable.encoding, indent + 1)
+      : `<div style="margin-left:${(indent + 1) * 20}px"><em>No encoding</em></div>`;
     const sample =
       Array.isArray(variable.sample_data) && variable.sample_data.length
-        ? `<table>${variable.sample_data
+        ? `<table style="margin-left:${(indent + 1) * 20}px">${variable.sample_data
             .slice(0, 10)
             .map(
               (v: any, i: number) =>
-                `<tr><td style="padding-left:${(indent + 2) * 20}px">[${i}]</td><td>${escape(v)}</td></tr>`
+                `<tr><td>[${i}]</td><td>${escape(v)}</td></tr>`
             )
             .join('')}</table>`
-        : `<div style="padding-left:${(indent + 2) * 20}px"><em>No sample</em></div>`;
+        : `<div style="margin-left:${(indent + 1) * 20}px"><em>No sample</em></div>`;
     return `<details style="margin-left:${indent * 20}px"><summary>${escape(name)}</summary>
       <details style="margin-left:${(indent + 1) * 20}px"><summary>Attributes</summary>${attrs}</details>
       <details style="margin-left:${(indent + 1) * 20}px"><summary>Sample Data</summary>${sample}</details>
@@ -163,8 +163,8 @@ function getDatasetHtml(webview: vscode.Webview, dataset: any): string {
     </details>`;
   };
 
-  const dimsTable = `<table>${Object.entries(dataset.dims || {})
-    .map(([k, v]) => `<tr><td style="padding-left:20px">${escape(k)}</td><td>${escape(v)}</td></tr>`)
+  const dimsTable = `<table style="margin-left:20px">${Object.entries(dataset.dims || {})
+    .map(([k, v]) => `<tr><td>${escape(k)}</td><td>${escape(v)}</td></tr>`)
     .join('')}</table>`;
 
   const coords = Object.entries(dataset.coords || {})
