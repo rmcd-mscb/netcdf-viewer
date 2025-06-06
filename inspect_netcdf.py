@@ -1,3 +1,4 @@
+import contextlib
 import sys
 import xarray as xr
 import json
@@ -14,12 +15,10 @@ def convert(obj):
         return obj.tolist()
     if hasattr(obj, 'isoformat'):
         return obj.isoformat()
-    try:
+    with contextlib.suppress(ImportError):
         import cftime
         if isinstance(obj, cftime.datetime):
             return obj.isoformat()
-    except ImportError:
-        pass
     return str(obj)
 
 if len(sys.argv) < 2:
@@ -34,10 +33,7 @@ try:
     for varname, var in ds.data_vars.items():
         try:
             arr = var.values
-            if arr.size > 10:
-                sample = arr.flat[:10]
-            else:
-                sample = arr.flat[:]
+            sample = arr.flat[:10] if arr.size > 10 else arr.flat[:]
             d['data_vars'][varname]['sample_data'] = [convert(x) for x in sample]
         except Exception as e:
             d['data_vars'][varname]['sample_data'] = [str(e)]
@@ -51,10 +47,7 @@ try:
     for coordname, coord in ds.coords.items():
         try:
             arr = coord.values
-            if arr.size > 10:
-                sample = arr.flat[:10]
-            else:
-                sample = arr.flat[:]
+            sample = arr.flat[:10] if arr.size > 10 else arr.flat[:]
             d['coords'][coordname]['sample_data'] = [convert(x) for x in sample]
         except Exception as e:
             d['coords'][coordname]['sample_data'] = [str(e)]

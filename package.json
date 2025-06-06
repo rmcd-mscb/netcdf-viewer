@@ -19,12 +19,12 @@
   "contributes": {
     "commands": [
       {
-        "command": "netcdf-viewer.openFile",
-        "title": "Open NetCDF File…"
+        "command": "netcdf-viewer.selectPythonEnv",
+        "title": "Select Python Environment for NetCDF Viewer"
       },
       {
-        "command": "netcdf-viewer.showVariable",
-        "title": "Show NetCDF Variable"
+        "command": "netcdf-viewer.openFile",
+        "title": "Open NetCDF File…"
       }
     ],
     "views": {
@@ -36,6 +36,12 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "netcdfExplorer",
+        "contents": "Welcome to NetCDF Viewer!\n\nTo get started, open a NetCDF file using the command palette or right-click a .nc file.\n\n[Open NetCDF File](command:netcdf-viewer.openFile)"
+      }
+    ],
     "menus": {
       "explorer/context": [
         {

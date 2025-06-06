@@ -51,7 +51,7 @@ test('NetCDFTreeProvider returns root nodes', async () => {
   const provider = new NetCDFTreeProvider(mockContext as any);
   const roots = await provider.getChildren();
   const labels = roots.map((item: any) => item.label);
-  assert.deepStrictEqual(labels, ['Dimensions', 'Coordinates', 'Data Variables']);
+  assert.deepStrictEqual(labels, ['NetCDF File']); // or the actual file name if you mock it
 });
 
 test('NetCDFTreeProvider returns dimension children', async () => {
@@ -59,6 +59,7 @@ test('NetCDFTreeProvider returns dimension children', async () => {
   const mockContext = {
     workspaceState: {
       get: () => ({
+        uri: { fsPath: '/path/to/test.nc' },
         dataset: {
           dims: { lat: 2, lon: 3 },
           coords: {},
@@ -69,7 +70,9 @@ test('NetCDFTreeProvider returns dimension children', async () => {
   };
   const provider = new NetCDFTreeProvider(mockContext as any);
   const roots = await provider.getChildren();
-  const dimsNode = roots.find((item: any) => item.label === 'Dimensions');
+  const fileNode = roots[0];
+  const branches = await provider.getChildren(fileNode);
+  const dimsNode = branches.find((item: any) => item.label === 'Dimensions');
   const dimChildren = await provider.getChildren(dimsNode);
   const dimLabels = dimChildren.map((item: any) => item.label);
   assert.deepStrictEqual(dimLabels, ['lat (2)', 'lon (3)']);
@@ -80,6 +83,7 @@ test('NetCDFTreeProvider shows attributes for variables', async () => {
   const mockContext = {
     workspaceState: {
       get: () => ({
+        uri: { fsPath: '/path/to/test.nc' },
         dataset: {
           dims: {},
           coords: {
@@ -100,10 +104,39 @@ test('NetCDFTreeProvider shows attributes for variables', async () => {
       }),
     },
   };
+
+  test('NetCDFTreeProvider shows file name as root', async () => {
+    const { NetCDFTreeProvider } = await import('../extension');
+    const mockContext = {
+      workspaceState: {
+        get: () => ({
+          uri: { fsPath: '/path/to/test.nc' },
+          dataset: {
+            dims: {},
+            coords: {},
+            data_vars: {},
+          },
+        }),
+      },
+    };
+    const provider = new NetCDFTreeProvider(mockContext as any);
+    const roots = await provider.getChildren();
+    assert.strictEqual(roots.length, 1);
+    assert.strictEqual(roots[0].label, 'test.nc');
+
+    // Check that the children of the file node are the main branches
+    const branches = await provider.getChildren(roots[0]);
+    const branchLabels = branches.map((item: any) => item.label);
+    assert.deepStrictEqual(branchLabels, ['Dimensions', 'Coordinates', 'Data Variables']);
+  });
+
   const provider = new NetCDFTreeProvider(mockContext as any);
-  // Test for coordinate variable
   const roots = await provider.getChildren();
-  const coordsNode = roots.find((item: any) => item.label === 'Coordinates');
+  const fileNode = roots[0];
+  const branches = await provider.getChildren(fileNode);
+
+  // Test for coordinate variable
+  const coordsNode = branches.find((item: any) => item.label === 'Coordinates');
   const coordVars = await provider.getChildren(coordsNode);
   const timeVar = coordVars.find((item: any) => item.label === 'time');
   const timeChildren = await provider.getChildren(timeVar);
@@ -114,7 +147,7 @@ test('NetCDFTreeProvider shows attributes for variables', async () => {
   assert.deepStrictEqual(attrLabels, ['standard_name: "time"', 'axis: "T"']);
 
   // Test for data variable
-  const dataVarsNode = roots.find((item: any) => item.label === 'Data Variables');
+  const dataVarsNode = branches.find((item: any) => item.label === 'Data Variables');
   const dataVars = await provider.getChildren(dataVarsNode);
   const tempVar = dataVars.find((item: any) => item.label === 'temp');
   const tempChildren = await provider.getChildren(tempVar);

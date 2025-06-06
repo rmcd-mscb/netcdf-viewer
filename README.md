@@ -14,6 +14,16 @@
 
 ---
 
+## Demonstration
+
+1. From the Command Pallete, type `netcdf-viewer.selectPythonEnv` to select your Python environment.
+2. Open a NetCDF file in the editor.
+   - from the Welcome page, click on the "Open NetCDF File" button
+   - or right-click a `.nc` file in the Explorer and select **Open in NetCDF Viewer**
+   - or use the command palette: `NetCDF Viewer: Open File…`
+
+![NetCDF Viewer Demo](media/netCDF-Viewer.gif)
+
 ## 📦 Installation
 
 ### From the VS Code Marketplace
@@ -56,13 +66,11 @@ This extension uses Python (via [xarray](https://xarray.dev/) and [netCDF4](http
 - Python 3.7+
 - `xarray` and `netCDF4` installed in your Python environment
 
-Install them with:
-
-```sh
-pip install xarray netCDF4
-```
-
 If you use a custom Python path, set it in your VS Code settings:
+
+- Select **File > Preferences > Settings** (or `Ctrl+,`)
+- Search for `netcdfViewer.pythonPath`
+- Set the path to your Python executable:
 
 ```markdown
 "netcdfViewer.pythonPath": "/path/to/python"
