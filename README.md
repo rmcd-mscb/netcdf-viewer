@@ -35,7 +35,6 @@
    - or use the command palette: `NetCDF Viewer: Open File…`
   ![NetCDF Viewer Open File Demo - command palette](media\Select_netcdf_file_3.gif)
 
-
 ## 📦 Installation
 
 ### From the VS Code Marketplace

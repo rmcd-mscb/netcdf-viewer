@@ -6,6 +6,22 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.0.3] - 2024-06-06
+
+### Added
+
+- Improved HTML view with expandable/collapsible tree and array slice notation for sample data.
+- Consistent expandable display for dtype, shape, dims, encoding, and sample_data.
+- Removed orphan values from attributes display.
+
+### Changed
+
+- Sidebar tree view is now optional; main focus is on the HTML view.
+
+### Fixed
+
+- Command activation and file opening issues.
+
 ## [0.0.2] - 2025-06-01
 
 ### Added
