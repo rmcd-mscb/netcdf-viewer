@@ -105,31 +105,6 @@ test('NetCDFTreeProvider shows attributes for variables', async () => {
     },
   };
 
-  test('NetCDFTreeProvider shows file name as root', async () => {
-    const { NetCDFTreeProvider } = await import('../extension');
-    const mockContext = {
-      workspaceState: {
-        get: () => ({
-          uri: { fsPath: '/path/to/test.nc' },
-          dataset: {
-            dims: {},
-            coords: {},
-            data_vars: {},
-          },
-        }),
-      },
-    };
-    const provider = new NetCDFTreeProvider(mockContext as any);
-    const roots = await provider.getChildren();
-    assert.strictEqual(roots.length, 1);
-    assert.strictEqual(roots[0].label, 'test.nc');
-
-    // Check that the children of the file node are the main branches
-    const branches = await provider.getChildren(roots[0]);
-    const branchLabels = branches.map((item: any) => item.label);
-    assert.deepStrictEqual(branchLabels, ['Dimensions', 'Coordinates', 'Data Variables']);
-  });
-
   const provider = new NetCDFTreeProvider(mockContext as any);
   const roots = await provider.getChildren();
   const fileNode = roots[0];
@@ -156,4 +131,29 @@ test('NetCDFTreeProvider shows attributes for variables', async () => {
   const tempAttrChildren = await provider.getChildren(tempAttrsNode);
   const tempAttrLabels = tempAttrChildren.map((item: any) => item.label);
   assert.deepStrictEqual(tempAttrLabels, ['units: "K"', 'long_name: "Temperature"']);
+});
+
+test('NetCDFTreeProvider shows file name as root', async () => {
+  const { NetCDFTreeProvider } = await import('../extension');
+  const mockContext = {
+    workspaceState: {
+      get: () => ({
+        uri: { fsPath: '/path/to/test.nc' },
+        dataset: {
+          dims: {},
+          coords: {},
+          data_vars: {},
+        },
+      }),
+    },
+  };
+  const provider = new NetCDFTreeProvider(mockContext as any);
+  const roots = await provider.getChildren();
+  assert.strictEqual(roots.length, 1);
+  assert.strictEqual(roots[0].label, 'test.nc');
+
+  // Check that the children of the file node are the main branches
+  const branches = await provider.getChildren(roots[0]);
+  const branchLabels = branches.map((item: any) => item.label);
+  assert.deepStrictEqual(branchLabels, ['Dimensions', 'Coordinates', 'Data Variables']);
 });
