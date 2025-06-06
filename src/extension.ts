@@ -130,15 +130,61 @@ function showDatasetHtmlView(context: vscode.ExtensionContext, dataset: any) {
 
 /** Returns HTML markup for the dataset using nested <details> elements, ordered and labeled. */
 function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string = 'NetCDF File'): string {
-  function renderTree(node: any, label: string, indent = 0): string {
-    if (typeof node !== 'object' || node === null) {
-      return `<div style="padding-left:${indent * 20}px">${label}: <span class="val">${node}</span></div>`;
+  function getSampleSlice(shape: number[] | undefined, sampleCount: number = 10): string {
+    if (!shape || shape.length === 0) {
+      return '';
     }
+    let remaining = sampleCount;
+    const slices = [];
+    for (let i = 0; i < shape.length; ++i) {
+      if (remaining <= 0) {
+        slices.push('0:1');
+        continue;
+      }
+      let thisDim = 1;
+      for (let j = i + 1; j < shape.length; ++j) {
+        thisDim *= shape[j];
+      }
+      let count = Math.min(shape[i], Math.ceil(remaining / thisDim));
+      slices.push(`0:${count}`);
+      remaining = Math.floor(remaining / count);
+    }
+    return `[${slices.join(', ')}]`;
+  }
+
+  function renderTree(node: any, label: string, indent = 0, parent?: any): string {
+    // Special handling for sample_data
+    let displayLabel = label;
+    if (label === 'sample_data' && Array.isArray(node) && parent && (parent.shape || parent.dims)) {
+      const shape = parent.shape || (parent.dims ? parent.dims.map((d: string) => parent[d]?.length || 0) : []);
+      const sampleSlice = getSampleSlice(shape, node.length);
+      displayLabel = `sample_data ${sampleSlice}`;
+    }
+
+    // Special rendering for "Attributes" branch
+    if (label === 'Attributes' && typeof node === 'object' && node !== null) {
+      const attrsList = Object.entries(node)
+        .map(([k, v]) => renderTree(v, k, indent + 1, node))
+        .join('');
+      return `<details>
+      <summary style="padding-left:${indent * 20}px">${label}</summary>
+      ${attrsList}
+    </details>`;
+    }
+
+    // Always render as expandable, even for primitives
+    if (typeof node !== 'object' || node === null) {
+      return `<details>
+      <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
+      <div style="padding-left:${(indent + 1) * 20}px"><span class="val">${node}</span></div>
+    </details>`;
+    }
+
     const children = Object.entries(node)
-      .map(([k, v]) => renderTree(v, k, indent + 1))
+      .map(([k, v]) => renderTree(v, k, indent + 1, node))
       .join('');
     return `<details>
-    <summary style="padding-left:${indent * 20}px">${label}</summary>
+    <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
     ${children}
   </details>`;
   }
@@ -162,7 +208,7 @@ function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string 
   </head>
   <body>
     <h1>🔍 NetCDF Structure Viewer</h1>
-    <details open>
+    <details>
       <summary style="font-size:1.2em;">${fileName}</summary>
       ${dims}
       ${coords}
@@ -200,6 +246,31 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
   }
   const sampleData = rawData.slice(0, 10);
 
+  // Add the sample slice function
+  function getSampleSlice(shape: number[] | undefined, sampleCount: number = 10): string {
+    if (!shape || shape.length === 0) {
+      return '';
+    }
+    let remaining = sampleCount;
+    const slices = [];
+    for (let i = 0; i < shape.length; ++i) {
+      if (remaining <= 0) {
+        slices.push('0:1');
+        continue;
+      }
+      let thisDim = 1;
+      for (let j = i + 1; j < shape.length; ++j) {
+        thisDim *= shape[j];
+      }
+      let count = Math.min(shape[i], Math.ceil(remaining / thisDim));
+      slices.push(`0:${count}`);
+      remaining = Math.floor(remaining / count);
+    }
+    return `[${slices.join(', ')}]`;
+  }
+  const shape = variable.shape || (variable.dims ? variable.dims.map((d: string) => variable[d]?.length || 0) : []);
+  const sampleSlice = getSampleSlice(shape, sampleData.length);
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -230,7 +301,9 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
         ${attrsStr || '<tr><td colspan="2"><em>No attributes</em></td></tr>'}
     </table>
 
-    <h2>Sample Data (first ${sampleData.length} values)</h2>
+    <h2>
+      Sample Data${sampleSlice ? ` ${sampleSlice}` : ''} (first ${sampleData.length} values)
+    </h2>
 ${
   sampleData.length > 0
     ? `
