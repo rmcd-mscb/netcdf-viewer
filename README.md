@@ -13,6 +13,7 @@
 - **Python-powered backend** for robust NetCDF parsing
 
 ## 📂 Supported Formats & Limitations
+
 - Works with local NetCDF files: `.nc`, `.nc4`, `.cdf`, `.h5`.
 - Primarily tested with NetCDF4/HDF5—older NetCDF3 files may not display all metadata.
 - Only a small preview of each variable (first ten values) is shown in the tree view.
@@ -23,12 +24,17 @@
 ## Demonstration
 
 1. From the Command Palette, type `netcdf-viewer.selectPythonEnv` to select your Python environment.
+
+   ![NetCDF Viewer Python Environment Selection](media/Select_python_env.gif)
+
 2. Open a NetCDF file in the editor.
    - from the Welcome page, click on the "Open NetCDF File" button
+  ![NetCDF Viewer Open File Demo](media\Select_netcdf_file_1.gif)
    - or right-click a `.nc` file in the Explorer and select **Open in NetCDF Viewer**
+  ![NetCDF Viewer Open File Demo - right-click](media\Select_netcdf_file_2.gif)
    - or use the command palette: `NetCDF Viewer: Open File…`
+  ![NetCDF Viewer Open File Demo - command palette](media\Select_netcdf_file_3.gif)
 
-![NetCDF Viewer Demo](media/netCDF-Viewer.gif)
 
 ## 📦 Installation
 
@@ -64,10 +70,12 @@
 ## 🔄 Updating & Uninstalling
 
 ### Updating
+
 - **Marketplace**: Open the Extensions view and click the refresh icon to check for updates (or enable auto-update).
 - **VSIX**: Download the latest `.vsix` and run `code --install-extension netcdf-viewer-<version>.vsix`.
 
 ### Uninstalling
+
 1. Open the Extensions view (`Ctrl+Shift+X`).
 2. Locate **NetCDF Viewer** in your installed extensions.
 3. Click the gear icon and choose **Uninstall**.
