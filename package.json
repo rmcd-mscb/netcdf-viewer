@@ -25,6 +25,10 @@
       {
         "command": "netcdf-viewer.openFile",
         "title": "Open NetCDF File…"
+      },
+      {
+        "command": "netcdf-viewer.showHtmlView",
+        "title": "Open NetCDF HTML View"
       }
     ],
     "views": {
