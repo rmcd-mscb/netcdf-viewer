@@ -1,6 +1,14 @@
 import { execFile } from 'child_process';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import {
+  NetCDFDataset,
+  NetCDFVariable,
+  NamedVariable,
+  StoredNetCDF,
+  InspectResult,
+  isInspectError,
+} from './types';
 
 /**
  * Called when your extension is activated.
@@ -24,15 +32,17 @@ export function activate(context: vscode.ExtensionContext) {
       fileUri = picked;
     }
     try {
-      const xarrayDataset = await inspectNetCDFWithPython(context, fileUri.fsPath);
-      if (xarrayDataset.error) {
-        vscode.window.showErrorMessage('Python error: ' + xarrayDataset.error);
+      const result = await inspectNetCDFWithPython(context, fileUri.fsPath);
+      if (isInspectError(result)) {
+        vscode.window.showErrorMessage('Python error: ' + result.error);
         return;
       }
-      context.workspaceState.update('lastNetCDF', {
+      const xarrayDataset: NetCDFDataset = result;
+      const storedData: StoredNetCDF = {
         uri: fileUri,
         dataset: xarrayDataset,
-      });
+      };
+      context.workspaceState.update('lastNetCDF', storedData);
       provider.refresh();
       await vscode.commands.executeCommand('workbench.view.explorer');
       // Automatically open HTML view after loading
@@ -63,8 +73,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Register command to show dataset in an HTML view
   const showHtmlCmd = vscode.commands.registerCommand('netcdf-viewer.showHtmlView', () => {
-    const stored = context.workspaceState.get<any>('lastNetCDF');
-    if (!stored || !stored.dataset) {
+    const stored = context.workspaceState.get<StoredNetCDF>('lastNetCDF');
+    if (!stored?.dataset) {
       vscode.window.showWarningMessage('No NetCDF file loaded.');
       return;
     }
@@ -95,7 +105,7 @@ export function deactivate() {
 /**
  * Opens a Webview panel to preview the selected NetCDF variable.
  */
-function showVariableWebview(context: vscode.ExtensionContext, variable: any) {
+function showVariableWebview(context: vscode.ExtensionContext, variable: NamedVariable) {
   const panel = vscode.window.createWebviewPanel(
     'netcdfVarPreview',
     `Preview: ${variable.name || variable.label || '?'}`,
@@ -116,8 +126,8 @@ function showVariableWebview(context: vscode.ExtensionContext, variable: any) {
 }
 
 /** Opens a webview to display the entire dataset as an HTML table with collapsible sections. */
-function showDatasetHtmlView(context: vscode.ExtensionContext, dataset: any) {
-  const stored = context.workspaceState.get<any>('lastNetCDF');
+function showDatasetHtmlView(context: vscode.ExtensionContext, dataset: NetCDFDataset) {
+  const stored = context.workspaceState.get<StoredNetCDF>('lastNetCDF');
   const fileName = stored && stored.uri ? require('path').basename(stored.uri.fsPath) : 'NetCDF File';
   const panel = vscode.window.createWebviewPanel(
     'netcdfHtmlView',
@@ -129,7 +139,7 @@ function showDatasetHtmlView(context: vscode.ExtensionContext, dataset: any) {
 }
 
 /** Returns HTML markup for the dataset using nested <details> elements, ordered and labeled. */
-function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string = 'NetCDF File'): string {
+function getDatasetHtml(webview: vscode.Webview, dataset: NetCDFDataset, fileName: string = 'NetCDF File'): string {
   const alwaysExpandable = new Set(['dtype', 'shape', 'dims', 'encoding']);
   function getSampleSlice(shape: number[] | undefined, sampleCount: number = 10): string {
     if (!shape || shape.length === 0) {
@@ -153,11 +163,12 @@ function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string 
     return `[${slices.join(', ')}]`;
   }
 
-  function renderTree(node: any, label: string, indent = 0, parent?: any): string {
+  function renderTree(node: unknown, label: string, indent = 0, parent?: Record<string, any>): string {
     // Special handling for sample_data
     let displayLabel = label;
     if (label === 'sample_data' && Array.isArray(node) && parent && (parent.shape || parent.dims)) {
-      const shape = parent.shape || (parent.dims ? parent.dims.map((d: string) => parent[d]?.length || 0) : []);
+      const shape: number[] =
+        parent.shape || (parent.dims ? parent.dims.map((d: string) => parent[d]?.length || 0) : []);
       const sampleSlice = getSampleSlice(shape, node.length);
       displayLabel = `sample_data ${sampleSlice}`;
     }
@@ -239,7 +250,7 @@ function getDatasetHtml(webview: vscode.Webview, dataset: any, fileName: string 
 /**
  * Generates HTML for the Webview, including metadata and a mini-chart.
  */
-function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionContext, variable: any): string {
+function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionContext, variable: NamedVariable): string {
   // URI for local Chart.js script in media folder
   const chartJsUri = webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'media', 'chart.js'));
 
@@ -307,9 +318,9 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
     <p><strong>Dimensions:</strong> ${
       variable.dims && variable.shape
         ? variable.dims.map((d: string, i: number) => `${d} (${variable.shape[i]})`).join(' × ')
-        : (variable.dimensions || variable.dims || []).join(' × ')
+        : (variable.dims || []).join(' × ')
     }</p>
-    <p><strong>Type:</strong> ${variable.type || variable.dtype || '?'}</p>
+    <p><strong>Type:</strong> ${variable.dtype || '?'}</p>
 
     <h2>Attributes</h2>
     <table>
@@ -368,6 +379,9 @@ ${
 </html>`;
 }
 
+/** Data attached to tree items - either the full dataset or a named variable */
+type TreeItemData = NetCDFDataset | NamedVariable | undefined;
+
 /**
  * Represents an item in the NetCDF Explorer view.
  */
@@ -375,7 +389,7 @@ class NetCDFTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
     public readonly state: vscode.TreeItemCollapsibleState,
-    public readonly variable: any = undefined,
+    public readonly data: TreeItemData = undefined,
     public readonly contextValue: string = ''
   ) {
     super(label, state);
@@ -402,11 +416,11 @@ export class NetCDFTreeProvider implements vscode.TreeDataProvider<NetCDFTreeIte
   }
 
   async getChildren(element?: NetCDFTreeItem): Promise<NetCDFTreeItem[]> {
-    const stored = this.context.workspaceState.get<any>('lastNetCDF');
-    if (!stored || !stored.dataset) {
+    const stored = this.context.workspaceState.get<StoredNetCDF>('lastNetCDF');
+    if (!stored?.dataset) {
       return [];
     }
-    const ds = stored.dataset;
+    const ds: NetCDFDataset = stored.dataset;
     const fileName = stored.uri ? path.basename(stored.uri.fsPath) : 'NetCDF File';
     // If no element, show the file name as the root
     if (!element) {
@@ -429,63 +443,61 @@ export class NetCDFTreeProvider implements vscode.TreeDataProvider<NetCDFTreeIte
     }
 
     if (element.label === 'Coordinates') {
-      return Object.entries(ds.coords || {}).map(
-        ([coordName, v]) =>
-          new NetCDFTreeItem(
-            coordName,
-            vscode.TreeItemCollapsibleState.Collapsed,
-            {
-              ...(typeof v === 'object' && v !== null ? v : {}),
-              name: coordName,
-            },
-            'variable'
-          )
-      );
+      return Object.entries(ds.coords || {}).map(([coordName, v]) => {
+        const namedVar: NamedVariable = { ...v, name: coordName };
+        return new NetCDFTreeItem(
+          coordName,
+          vscode.TreeItemCollapsibleState.Collapsed,
+          namedVar,
+          'variable'
+        );
+      });
     }
 
     if (element.label === 'Data Variables') {
-      return Object.entries(ds.data_vars || {}).map(
-        ([varName, v]) =>
-          new NetCDFTreeItem(
-            varName,
-            vscode.TreeItemCollapsibleState.Collapsed,
-            {
-              ...(typeof v === 'object' && v !== null ? v : {}),
-              name: varName,
-            },
-            'variable'
-          )
-      );
+      return Object.entries(ds.data_vars || {}).map(([varName, v]) => {
+        const namedVar: NamedVariable = { ...v, name: varName };
+        return new NetCDFTreeItem(
+          varName,
+          vscode.TreeItemCollapsibleState.Collapsed,
+          namedVar,
+          'variable'
+        );
+      });
     }
 
     // If this is a variable, show its attributes, sample data, and encoding as children
-    if (element.contextValue === 'variable' && element.variable) {
+    if (element.contextValue === 'variable' && element.data) {
+      const varData = element.data as NamedVariable;
       return [
-        new NetCDFTreeItem('Attributes', vscode.TreeItemCollapsibleState.Collapsed, element.variable, 'attributes'),
-        new NetCDFTreeItem('Sample Data', vscode.TreeItemCollapsibleState.Collapsed, element.variable, 'sample'),
-        new NetCDFTreeItem('Encoding', vscode.TreeItemCollapsibleState.Collapsed, element.variable, 'encoding'),
+        new NetCDFTreeItem('Attributes', vscode.TreeItemCollapsibleState.Collapsed, varData, 'attributes'),
+        new NetCDFTreeItem('Sample Data', vscode.TreeItemCollapsibleState.Collapsed, varData, 'sample'),
+        new NetCDFTreeItem('Encoding', vscode.TreeItemCollapsibleState.Collapsed, varData, 'encoding'),
       ];
     }
 
     // Show encoding children
-    if (element.contextValue === 'encoding' && element.variable) {
-      return Object.entries(element.variable.encoding || {}).map(
+    if (element.contextValue === 'encoding' && element.data) {
+      const varData = element.data as NamedVariable;
+      return Object.entries(varData.encoding || {}).map(
         ([k, v]) => new NetCDFTreeItem(`${k}: ${JSON.stringify(v)}`, vscode.TreeItemCollapsibleState.None)
       );
     }
 
     // Show attribute children
-    if (element.contextValue === 'attributes' && element.variable) {
-      return Object.entries(element.variable.attrs || {}).map(
+    if (element.contextValue === 'attributes' && element.data) {
+      const varData = element.data as NamedVariable;
+      return Object.entries(varData.attrs || {}).map(
         ([k, v]) => new NetCDFTreeItem(`${k}: ${JSON.stringify(v)}`, vscode.TreeItemCollapsibleState.None)
       );
     }
 
     // Show sample data children
-    if (element.contextValue === 'sample' && element.variable) {
-      const sampleData = Array.isArray(element.variable.sample_data) ? element.variable.sample_data.slice(0, 10) : [];
+    if (element.contextValue === 'sample' && element.data) {
+      const varData = element.data as NamedVariable;
+      const sampleData = Array.isArray(varData.sample_data) ? varData.sample_data.slice(0, 10) : [];
       return sampleData.map(
-        (v: any, i: number) => new NetCDFTreeItem(`[${i}]: ${v}`, vscode.TreeItemCollapsibleState.None)
+        (v, i) => new NetCDFTreeItem(`[${i}]: ${v}`, vscode.TreeItemCollapsibleState.None)
       );
     }
 
@@ -496,7 +508,7 @@ export class NetCDFTreeProvider implements vscode.TreeDataProvider<NetCDFTreeIte
 /**
  * Inspects a NetCDF file using an external Python script and returns the parsed output.
  */
-async function inspectNetCDFWithPython(context: vscode.ExtensionContext, filePath: string): Promise<any> {
+async function inspectNetCDFWithPython(context: vscode.ExtensionContext, filePath: string): Promise<InspectResult> {
   const scriptPath = path.join(context.extensionPath, 'inspect_netcdf.py');
   const pythonPath = vscode.workspace.getConfiguration().get<string>('netcdfViewer.pythonPath', 'python');
   return new Promise((resolve, reject) => {
