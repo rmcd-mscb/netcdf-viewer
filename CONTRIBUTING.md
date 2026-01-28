@@ -1,7 +1,34 @@
 # Contributing to NetCDF Viewer
 
-Thank you for your interest in contributing!  
+Thank you for your interest in contributing!
 This guide will help you set up your development environment and follow our coding standards.
+
+---
+
+## 📁 Project Structure
+
+```
+netcdf-viewer/
+├── src/
+│   ├── extension.ts      # Main extension entry point, commands, tree provider
+│   ├── types.ts          # TypeScript interfaces for NetCDF data structures
+│   └── test/
+│       └── extension.test.ts
+├── inspect_netcdf.py     # Python backend for reading NetCDF files
+├── media/
+│   └── chart.js          # Chart.js library for visualizations
+├── dist/                 # Webpack output (production bundle)
+├── out/                  # TypeScript output (for testing)
+└── .vscode-test.mjs      # Test runner configuration
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/extension.ts` | VS Code extension entry point, commands, tree view provider, webview generation |
+| `src/types.ts` | TypeScript interfaces (`NetCDFDataset`, `NetCDFVariable`, etc.) |
+| `inspect_netcdf.py` | Python script that uses xarray to extract NetCDF metadata and sample data |
 
 ---
 
@@ -51,11 +78,7 @@ This guide will help you set up your development environment and follow our codi
   npm test
   ```
 
-  or
-
-  ```sh
-  npx @vscode/test-cli --extensionDevelopmentPath=. --extensionTestsPath=./out/test/index.js
-  ```
+  This runs the full test pipeline: compile, lint, type check, then execute tests via `@vscode/test-cli`.
 
 ---
 
@@ -67,14 +90,35 @@ This guide will help you set up your development environment and follow our codi
   npm run lint
   ```
 
+- **Type check:**
+
+  ```sh
+  npm run tsc
+  ```
+
 - **Format your code:**
 
   ```sh
   npx prettier --write "src/**/*.{ts,js,json}"
   ```
 
-- **Pre-commit hooks:**  
+- **Pre-commit hooks:**
   We use [Husky](https://typicode.github.io/husky/) and [lint-staged](https://github.com/okonet/lint-staged) to automatically lint and format staged files before each commit.
+
+### TypeScript Guidelines
+
+- **Use proper types:** Import and use interfaces from `src/types.ts` rather than using `any`.
+- **Type guards:** Use type guard functions like `isInspectError()` for discriminated unions.
+- **New interfaces:** When adding new data structures, define interfaces in `src/types.ts` with JSDoc comments.
+
+```typescript
+// Good
+import { NetCDFDataset, StoredNetCDF } from './types';
+const stored = context.workspaceState.get<StoredNetCDF>('lastNetCDF');
+
+// Avoid
+const stored = context.workspaceState.get<any>('lastNetCDF');
+```
 
 ---
 
@@ -105,7 +149,8 @@ This guide will help you set up your development environment and follow our codi
 
 - Keep your changes focused and well-documented.
 - Write or update tests for new features or bug fixes.
-- If you’re unsure about anything, open an issue or draft PR for discussion!
+- Run `npm run tsc` to catch type errors before committing.
+- If you're unsure about anything, open an issue or draft PR for discussion!
 
 ---
 
