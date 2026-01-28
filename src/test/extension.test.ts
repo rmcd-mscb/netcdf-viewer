@@ -36,7 +36,7 @@ test('NetCDF Explorer provider should be registered', () => {
 });
 
 test('NetCDFTreeProvider returns root nodes', async () => {
-  const { NetCDFTreeProvider } = await import('../extension');
+  const { NetCDFTreeProvider } = await import('../providers/NetCDFTreeProvider');
   const mockContext = {
     workspaceState: {
       get: () => ({
@@ -55,7 +55,7 @@ test('NetCDFTreeProvider returns root nodes', async () => {
 });
 
 test('NetCDFTreeProvider returns dimension children', async () => {
-  const { NetCDFTreeProvider } = await import('../extension');
+  const { NetCDFTreeProvider } = await import('../providers/NetCDFTreeProvider');
   const mockContext = {
     workspaceState: {
       get: () => ({
@@ -79,15 +79,18 @@ test('NetCDFTreeProvider returns dimension children', async () => {
 });
 
 test('NetCDFTreeProvider shows attributes for variables', async () => {
-  const { NetCDFTreeProvider } = await import('../extension');
+  const { NetCDFTreeProvider } = await import('../providers/NetCDFTreeProvider');
   const mockContext = {
     workspaceState: {
       get: () => ({
         uri: { fsPath: '/path/to/test.nc' },
         dataset: {
-          dims: {},
+          dims: { time: 3, lat: 10, lon: 20 },
           coords: {
             time: {
+              dims: ['time'],
+              shape: [3],
+              dtype: 'datetime64[ns]',
               attrs: { standard_name: 'time', axis: 'T' },
               sample_data: [0, 1, 2],
               encoding: {},
@@ -95,6 +98,9 @@ test('NetCDFTreeProvider shows attributes for variables', async () => {
           },
           data_vars: {
             temp: {
+              dims: ['time', 'lat', 'lon'],
+              shape: [3, 10, 20],
+              dtype: 'float32',
               attrs: { units: 'K', long_name: 'Temperature' },
               sample_data: [273.15, 274.15],
               encoding: {},
@@ -134,7 +140,7 @@ assert.deepStrictEqual(tempAttrLabels, ['units: "K"', 'long_name: "Temperature"'
 });
 
 test('NetCDFTreeProvider returns empty array when no dataset', async () => {
-  const { NetCDFTreeProvider } = await import('../extension');
+  const { NetCDFTreeProvider } = await import('../providers/NetCDFTreeProvider');
   const mockContext = {
     workspaceState: {
       get: () => undefined,
@@ -147,7 +153,7 @@ test('NetCDFTreeProvider returns empty array when no dataset', async () => {
 });
 
 test('NetCDFTreeProvider shows file name as root', async () => {
-  const { NetCDFTreeProvider } = await import('../extension');
+  const { NetCDFTreeProvider } = await import('../providers/NetCDFTreeProvider');
   const mockContext = {
     workspaceState: {
       get: () => ({
