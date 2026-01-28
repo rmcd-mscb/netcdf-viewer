@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { NetCDFDataset, StoredNetCDF } from '../types';
 import { getSampleSlice } from '../utils/sampleSlice';
+import { escapeHtml } from '../utils/escapeHtml';
 
 /**
  * Opens a webview to display the entire dataset as an HTML table with collapsible sections.
@@ -17,30 +18,35 @@ export function showDatasetHtmlView(context: vscode.ExtensionContext, dataset: N
     'netcdfHtmlView',
     fileName, // Use the filename as the tab heading
     vscode.ViewColumn.One,
-    { enableScripts: true }
+    { enableScripts: false }
   );
 
-  panel.webview.html = getDatasetHtml(dataset, fileName);
+  panel.webview.html = getDatasetHtml(panel.webview, dataset, fileName);
 }
 
 /**
  * Returns HTML markup for the dataset using nested <details> elements, ordered and labeled.
  *
+ * @param webview - The webview instance for CSP source
  * @param dataset - The NetCDF dataset
  * @param fileName - Name of the file for display
  * @returns HTML string
  */
-export function getDatasetHtml(dataset: NetCDFDataset, fileName: string = 'NetCDF File'): string {
+export function getDatasetHtml(
+  webview: vscode.Webview,
+  dataset: NetCDFDataset,
+  fileName: string = 'NetCDF File'
+): string {
   const alwaysExpandable = new Set(['dtype', 'shape', 'dims', 'encoding']);
 
   function renderTree(node: unknown, label: string, indent = 0, parent?: Record<string, any>): string {
     // Special handling for sample_data
-    let displayLabel = label;
+    let displayLabel = escapeHtml(label);
     if (label === 'sample_data' && Array.isArray(node) && parent && (parent.shape || parent.dims)) {
       const shape: number[] =
         parent.shape || (parent.dims ? parent.dims.map((d: string) => parent[d]?.length || 0) : []);
       const sampleSlice = getSampleSlice(shape, node.length);
-      displayLabel = `sample_data ${sampleSlice}`;
+      displayLabel = `sample_data ${escapeHtml(sampleSlice)}`;
     }
 
     // Always expandable for certain keys, even if primitive
@@ -51,7 +57,7 @@ export function getDatasetHtml(dataset: NetCDFDataset, fileName: string = 'NetCD
           .map(([k, v]) => renderTree(v, k, indent + 1, node))
           .join('');
       } else {
-        content = `<div style="padding-left:${(indent + 1) * 20}px"><span class="val">${node}</span></div>`;
+        content = `<div style="padding-left:${(indent + 1) * 20}px"><span class="val">${escapeHtml(node)}</span></div>`;
       }
       return `<details>
         <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
@@ -74,7 +80,10 @@ export function getDatasetHtml(dataset: NetCDFDataset, fileName: string = 'NetCD
     if (Array.isArray(node)) {
       const preview = node
         .slice(0, 10)
-        .map((v, i) => `<div style="padding-left:${(indent + 1) * 20}px">[${i}]: <span class="val">${v}</span></div>`)
+        .map(
+          (v, i) =>
+            `<div style="padding-left:${(indent + 1) * 20}px">[${i}]: <span class="val">${escapeHtml(v)}</span></div>`
+        )
         .join('');
       return `<details>
       <summary style="padding-left:${indent * 20}px">${displayLabel}</summary>
@@ -83,7 +92,7 @@ export function getDatasetHtml(dataset: NetCDFDataset, fileName: string = 'NetCD
     }
 
     // For primitives, just show as a line
-    return `<div style="padding-left:${indent * 20}px">${displayLabel}: <span class="val">${node}</span></div>`;
+    return `<div style="padding-left:${indent * 20}px">${displayLabel}: <span class="val">${escapeHtml(node)}</span></div>`;
   }
 
   // Prepare ordered branches
@@ -96,6 +105,8 @@ export function getDatasetHtml(dataset: NetCDFDataset, fileName: string = 'NetCD
   <!DOCTYPE html>
   <html>
   <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource};">
     <style>
       body { font-family: sans-serif; padding: 16px; }
       summary { font-weight: bold; cursor: pointer; }
@@ -106,7 +117,7 @@ export function getDatasetHtml(dataset: NetCDFDataset, fileName: string = 'NetCD
   <body>
     <h1>NetCDF Structure Viewer</h1>
     <details>
-      <summary style="font-size:1.2em;">${fileName}</summary>
+      <summary style="font-size:1.2em;">${escapeHtml(fileName)}</summary>
       ${dims}
       ${coords}
       ${dataVars}

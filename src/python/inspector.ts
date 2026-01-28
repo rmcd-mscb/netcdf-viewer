@@ -17,16 +17,27 @@ export async function inspectNetCDFWithPython(
   const scriptPath = path.join(context.extensionPath, 'inspect_netcdf.py');
   const pythonPath = vscode.workspace.getConfiguration().get<string>('netcdfViewer.pythonPath', 'python');
 
+  const MAX_ERROR_LENGTH = 500;
+
   return new Promise((resolve, reject) => {
     execFile(pythonPath, [scriptPath, filePath], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err) {
-        // Show stderr in the error message for debugging
-        reject(`Python error: ${stderr || err.message}`);
+        // Truncate error output to avoid overwhelming the user
+        let details = stderr || err.message || 'Unknown error';
+        if (details.length > MAX_ERROR_LENGTH) {
+          details = details.slice(0, MAX_ERROR_LENGTH) + '... [truncated]';
+        }
+        reject(`Python error: ${details}`);
       } else {
         try {
           resolve(JSON.parse(stdout));
         } catch (e) {
-          reject('Failed to parse Python output: ' + stdout);
+          // Truncate output snippet for parse errors
+          let snippet = stdout || '';
+          if (snippet.length > MAX_ERROR_LENGTH) {
+            snippet = snippet.slice(0, MAX_ERROR_LENGTH) + '... [truncated]';
+          }
+          reject(`Failed to parse Python output: ${snippet}`);
         }
       }
     });

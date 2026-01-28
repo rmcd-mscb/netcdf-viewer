@@ -1,9 +1,21 @@
 import * as vscode from 'vscode';
 import { NamedVariable } from '../types';
 import { getSampleSlice } from '../utils/sampleSlice';
+import { escapeHtml } from '../utils/escapeHtml';
+
+/**
+ * Escapes a string for safe use in JavaScript string literals.
+ */
+function escapeJs(unsafe: unknown): string {
+  const str = String(unsafe ?? '');
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+}
 
 /**
  * Opens a Webview panel to preview the selected NetCDF variable.
+ *
+ * NOTE: This function is currently not wired up to any command.
+ * It can be used in the future to preview variables when clicked in the tree view.
  *
  * @param context - VS Code extension context
  * @param variable - The variable to preview
@@ -44,14 +56,8 @@ export function getWebviewContent(
   // URI for local Chart.js script in media folder
   const chartJsUri = webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'media', 'chart.js'));
 
-  // Format variable summary like xarray
-  const dimsStr =
-    variable.dims && variable.dims.length > 0
-      ? `(${variable.dims.map((d: string, i: number) => `${d}: ${variable.shape ? variable.shape[i] : '?'}`).join(', ')})`
-      : '';
-
   const attrsStr = Object.entries(variable.attrs || {})
-    .map(([k, v]) => `<tr><td>${k}</td><td>${JSON.stringify(v)}</td></tr>`)
+    .map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(JSON.stringify(v))}</td></tr>`)
     .join('');
 
   // Read all data and take the first 10 values as sample
@@ -60,6 +66,14 @@ export function getWebviewContent(
 
   const shape = variable.shape || [];
   const sampleSlice = getSampleSlice(shape, sampleData.length);
+
+  const variableName = escapeHtml(variable.name || variable.label || '?');
+  const variableNameJs = escapeJs(variable.name || variable.label || '?');
+
+  const dimensionsDisplay =
+    variable.dims && variable.shape
+      ? variable.dims.map((d: string, i: number) => `${escapeHtml(d)} (${variable.shape[i]})`).join(' × ')
+      : (variable.dims || []).map((d) => escapeHtml(d)).join(' × ');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -75,13 +89,9 @@ export function getWebviewContent(
     <title>Variable Preview</title>
 </head>
 <body>
-    <h1>${variable.name || variable.label || '?'}</h1>
-    <p><strong>Dimensions:</strong> ${
-      variable.dims && variable.shape
-        ? variable.dims.map((d: string, i: number) => `${d} (${variable.shape[i]})`).join(' × ')
-        : (variable.dims || []).join(' × ')
-    }</p>
-    <p><strong>Type:</strong> ${variable.dtype || '?'}</p>
+    <h1>${variableName}</h1>
+    <p><strong>Dimensions:</strong> ${dimensionsDisplay}</p>
+    <p><strong>Type:</strong> ${escapeHtml(variable.dtype || '?')}</p>
 
     <h2>Attributes</h2>
     <table>
@@ -90,14 +100,14 @@ export function getWebviewContent(
     </table>
 
     <h2>
-      Sample Data${sampleSlice ? ` ${sampleSlice}` : ''} (first ${sampleData.length} values)
+      Sample Data${sampleSlice ? ` ${escapeHtml(sampleSlice)}` : ''} (first ${sampleData.length} values)
     </h2>
 ${
   sampleData.length > 0
     ? `
       <table>
         <tr><th>Index</th><th>Value</th></tr>
-        ${sampleData.map((v, i) => `<tr><td>${i}</td><td>${v}</td></tr>`).join('')}
+        ${sampleData.map((v, i) => `<tr><td>${i}</td><td>${escapeHtml(v)}</td></tr>`).join('')}
       </table>
       <canvas id="chart" width="400" height="200"></canvas>
       `
@@ -120,7 +130,7 @@ ${
             data: {
                 labels: ${JSON.stringify(sampleData.map((_, i) => i))},
                 datasets: [{
-                    label: '${variable.name || variable.label || '?'}',
+                    label: '${variableNameJs}',
                     data: ${JSON.stringify(sampleData)},
                     fill: false,
                     tension: 0.1

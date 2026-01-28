@@ -85,9 +85,12 @@ test('NetCDFTreeProvider shows attributes for variables', async () => {
       get: () => ({
         uri: { fsPath: '/path/to/test.nc' },
         dataset: {
-          dims: {},
+          dims: { time: 3, lat: 10, lon: 20 },
           coords: {
             time: {
+              dims: ['time'],
+              shape: [3],
+              dtype: 'datetime64[ns]',
               attrs: { standard_name: 'time', axis: 'T' },
               sample_data: [0, 1, 2],
               encoding: {},
@@ -95,6 +98,9 @@ test('NetCDFTreeProvider shows attributes for variables', async () => {
           },
           data_vars: {
             temp: {
+              dims: ['time', 'lat', 'lon'],
+              shape: [3, 10, 20],
+              dtype: 'float32',
               attrs: { units: 'K', long_name: 'Temperature' },
               sample_data: [273.15, 274.15],
               encoding: {},
