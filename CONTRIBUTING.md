@@ -10,25 +10,39 @@ This guide will help you set up your development environment and follow our codi
 ```
 netcdf-viewer/
 ├── src/
-│   ├── extension.ts      # Main extension entry point, commands, tree provider
-│   ├── types.ts          # TypeScript interfaces for NetCDF data structures
+│   ├── extension.ts              # Entry point: activate/deactivate, command registration
+│   ├── types.ts                  # TypeScript interfaces for NetCDF data structures
+│   ├── providers/
+│   │   └── NetCDFTreeProvider.ts # Tree view provider for NetCDF Explorer
+│   ├── views/
+│   │   ├── datasetHtmlView.ts    # HTML view for dataset structure
+│   │   └── variableWebview.ts    # Chart.js webview for variable preview
+│   ├── python/
+│   │   └── inspector.ts          # Python script execution and dependency checks
+│   ├── utils/
+│   │   └── sampleSlice.ts        # Shared utility functions
 │   └── test/
 │       └── extension.test.ts
-├── inspect_netcdf.py     # Python backend for reading NetCDF files
+├── inspect_netcdf.py             # Python backend for reading NetCDF files
 ├── media/
-│   └── chart.js          # Chart.js library for visualizations
-├── dist/                 # Webpack output (production bundle)
-├── out/                  # TypeScript output (for testing)
-└── .vscode-test.mjs      # Test runner configuration
+│   └── chart.js                  # Chart.js library for visualizations
+├── dist/                         # Webpack output (production bundle)
+├── out/                          # TypeScript output (for testing)
+└── .vscode-test.mjs              # Test runner configuration
 ```
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/extension.ts` | VS Code extension entry point, commands, tree view provider, webview generation |
+| `src/extension.ts` | Entry point with `activate`/`deactivate` and command registration |
 | `src/types.ts` | TypeScript interfaces (`NetCDFDataset`, `NetCDFVariable`, etc.) |
-| `inspect_netcdf.py` | Python script that uses xarray to extract NetCDF metadata and sample data |
+| `src/providers/NetCDFTreeProvider.ts` | Tree view data provider for the NetCDF Explorer sidebar |
+| `src/views/datasetHtmlView.ts` | Generates collapsible HTML view of dataset structure |
+| `src/views/variableWebview.ts` | Generates variable preview with Chart.js visualization |
+| `src/python/inspector.ts` | Executes Python script and checks dependencies |
+| `src/utils/sampleSlice.ts` | Shared `getSampleSlice()` utility function |
+| `inspect_netcdf.py` | Python script that uses xarray to extract NetCDF metadata |
 
 ---
 

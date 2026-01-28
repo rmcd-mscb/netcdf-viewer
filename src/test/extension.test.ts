@@ -36,7 +36,7 @@ test('NetCDF Explorer provider should be registered', () => {
 });
 
 test('NetCDFTreeProvider returns root nodes', async () => {
-  const { NetCDFTreeProvider } = await import('../extension');
+  const { NetCDFTreeProvider } = await import('../providers/NetCDFTreeProvider');
   const mockContext = {
     workspaceState: {
       get: () => ({
@@ -55,7 +55,7 @@ test('NetCDFTreeProvider returns root nodes', async () => {
 });
 
 test('NetCDFTreeProvider returns dimension children', async () => {
-  const { NetCDFTreeProvider } = await import('../extension');
+  const { NetCDFTreeProvider } = await import('../providers/NetCDFTreeProvider');
   const mockContext = {
     workspaceState: {
       get: () => ({
@@ -79,7 +79,7 @@ test('NetCDFTreeProvider returns dimension children', async () => {
 });
 
 test('NetCDFTreeProvider shows attributes for variables', async () => {
-  const { NetCDFTreeProvider } = await import('../extension');
+  const { NetCDFTreeProvider } = await import('../providers/NetCDFTreeProvider');
   const mockContext = {
     workspaceState: {
       get: () => ({
@@ -134,7 +134,7 @@ assert.deepStrictEqual(tempAttrLabels, ['units: "K"', 'long_name: "Temperature"'
 });
 
 test('NetCDFTreeProvider returns empty array when no dataset', async () => {
-  const { NetCDFTreeProvider } = await import('../extension');
+  const { NetCDFTreeProvider } = await import('../providers/NetCDFTreeProvider');
   const mockContext = {
     workspaceState: {
       get: () => undefined,
@@ -147,7 +147,7 @@ test('NetCDFTreeProvider returns empty array when no dataset', async () => {
 });
 
 test('NetCDFTreeProvider shows file name as root', async () => {
-  const { NetCDFTreeProvider } = await import('../extension');
+  const { NetCDFTreeProvider } = await import('../providers/NetCDFTreeProvider');
   const mockContext = {
     workspaceState: {
       get: () => ({
