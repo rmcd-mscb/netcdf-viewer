@@ -76,11 +76,9 @@ export function getDatasetHtml(
     </details>`;
     }
 
-    // For arrays, show a preview (first 10 values)
+    // For arrays, show a preview (sample size is configured via netcdfViewer.sampleSize)
     if (Array.isArray(node)) {
-      const preview = node
-        .slice(0, 10)
-        .map(
+      const preview = node.map(
           (v, i) =>
             `<div style="padding-left:${(indent + 1) * 20}px">[${i}]: <span class="val">${escapeHtml(v)}</span></div>`
         )

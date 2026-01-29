@@ -25,6 +25,14 @@ if len(sys.argv) < 2:
     print(json.dumps({"error": "No file provided"}))
     sys.exit(1)
 
+# Get sample size from second argument, default to 10
+sample_size = 10
+if len(sys.argv) >= 3:
+    try:
+        sample_size = max(1, min(1000, int(sys.argv[2])))
+    except ValueError:
+        pass  # Use default if invalid
+
 try:
     ds = xr.open_dataset(sys.argv[1])
     d = ds.to_dict(data=False)  # Only metadata
@@ -33,7 +41,7 @@ try:
     for varname, var in ds.data_vars.items():
         try:
             arr = var.values
-            sample = arr.flat[:10] if arr.size > 10 else arr.flat[:]
+            sample = arr.flat[:sample_size] if arr.size > sample_size else arr.flat[:]
             d['data_vars'][varname]['sample_data'] = [convert(x) for x in sample]
         except Exception as e:
             d['data_vars'][varname]['sample_data'] = [str(e)]
@@ -47,7 +55,7 @@ try:
     for coordname, coord in ds.coords.items():
         try:
             arr = coord.values
-            sample = arr.flat[:10] if arr.size > 10 else arr.flat[:]
+            sample = arr.flat[:sample_size] if arr.size > sample_size else arr.flat[:]
             d['coords'][coordname]['sample_data'] = [convert(x) for x in sample]
         except Exception as e:
             d['coords'][coordname]['sample_data'] = [str(e)]

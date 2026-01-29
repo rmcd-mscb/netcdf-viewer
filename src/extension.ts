@@ -31,7 +31,17 @@ export function activate(context: vscode.ExtensionContext): void {
     }
 
     try {
-      const result = await inspectNetCDFWithPython(context, fileUri.fsPath);
+      const result = await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: 'Loading NetCDF file...',
+          cancellable: false,
+        },
+        async () => {
+          return inspectNetCDFWithPython(context, fileUri.fsPath);
+        }
+      );
+
       if (isInspectError(result)) {
         vscode.window.showErrorMessage('Python error: ' + result.error);
         return;

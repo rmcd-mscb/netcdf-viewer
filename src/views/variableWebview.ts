@@ -60,9 +60,8 @@ export function getWebviewContent(
     .map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(JSON.stringify(v))}</td></tr>`)
     .join('');
 
-  // Read all data and take the first 10 values as sample
-  const rawData: (number | string | null)[] = Array.isArray(variable.sample_data) ? variable.sample_data : [];
-  const sampleData = rawData.slice(0, 10);
+  // Sample data (sample size is configured via netcdfViewer.sampleSize)
+  const sampleData: (number | string | null)[] = Array.isArray(variable.sample_data) ? variable.sample_data : [];
 
   const shape = variable.shape || [];
   const sampleSlice = getSampleSlice(shape, sampleData.length);
