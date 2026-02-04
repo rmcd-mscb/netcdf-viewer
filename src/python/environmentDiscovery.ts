@@ -9,7 +9,7 @@ import { execFile } from 'child_process';
 export interface PythonEnvironment {
   name: string;
   path: string;
-  source: 'vscode-python' | 'conda' | 'venv' | 'system' | 'manual';
+  source: 'vscode-python' | 'conda' | 'venv' | 'system';
   version?: string;
 }
 
@@ -79,7 +79,8 @@ export async function discoverCondaEnvironments(): Promise<PythonEnvironment[]> 
         const pythonPath =
           process.platform === 'win32' ? path.join(envPath, 'python.exe') : path.join(envPath, 'bin', 'python');
 
-        if (fs.existsSync(pythonPath)) {
+        try {
+          await fs.promises.access(pythonPath);
           const envName = path.basename(envPath);
           const isBase = envPath === info.root_prefix;
           const version = await getPythonVersion(pythonPath);
@@ -89,6 +90,8 @@ export async function discoverCondaEnvironments(): Promise<PythonEnvironment[]> 
             source: 'conda',
             version,
           });
+        } catch {
+          // Python executable not found in this environment
         }
       }
     }
@@ -110,7 +113,8 @@ export async function discoverWorkspaceVenvs(): Promise<PythonEnvironment[]> {
     return environments;
   }
 
-  const venvDirs = ['.venv', 'venv', 'env', '.env'];
+  // Note: '.env' is excluded as it's commonly used for environment variable files
+  const venvDirs = ['.venv', 'venv', 'env'];
 
   for (const folder of workspaceFolders) {
     for (const venvDir of venvDirs) {
@@ -120,7 +124,8 @@ export async function discoverWorkspaceVenvs(): Promise<PythonEnvironment[]> {
           ? path.join(venvPath, 'Scripts', 'python.exe')
           : path.join(venvPath, 'bin', 'python');
 
-      if (fs.existsSync(pythonPath)) {
+      try {
+        await fs.promises.access(pythonPath);
         const version = await getPythonVersion(pythonPath);
         environments.push({
           name: `venv: ${venvDir}${version ? ` (${version})` : ''}`,
@@ -128,6 +133,8 @@ export async function discoverWorkspaceVenvs(): Promise<PythonEnvironment[]> {
           source: 'venv',
           version,
         });
+      } catch {
+        // Python executable not found in this venv directory
       }
     }
   }
@@ -147,16 +154,21 @@ export async function discoverSystemPython(): Promise<PythonEnvironment[]> {
       const pythonPath = await runCommand(process.platform === 'win32' ? 'where' : 'which', [cmd]);
       const firstPath = pythonPath.trim().split('\n')[0];
 
-      if (firstPath && fs.existsSync(firstPath)) {
-        // Check if we already have this path
-        if (!environments.some((e) => e.path === firstPath)) {
-          const version = await getPythonVersion(firstPath);
-          environments.push({
-            name: `System: ${cmd}${version ? ` (${version})` : ''}`,
-            path: firstPath,
-            source: 'system',
-            version,
-          });
+      if (firstPath) {
+        try {
+          await fs.promises.access(firstPath);
+          // Check if we already have this path
+          if (!environments.some((e) => e.path === firstPath)) {
+            const version = await getPythonVersion(firstPath);
+            environments.push({
+              name: `System: ${cmd}${version ? ` (${version})` : ''}`,
+              path: firstPath,
+              source: 'system',
+              version,
+            });
+          }
+        } catch {
+          // Path not accessible
         }
       }
     } catch {
@@ -173,7 +185,8 @@ export async function discoverSystemPython(): Promise<PythonEnvironment[]> {
 export async function getPythonVersion(pythonPath: string): Promise<string | undefined> {
   try {
     const output = await runCommand(pythonPath, ['--version']);
-    const match = output.match(/Python (\d+\.\d+\.\d+)/);
+    // Match version numbers like 3.9, 3.9.7, 3.12.0rc1, 3.9.7+
+    const match = output.match(/Python (\d+(?:\.\d+){1,2})(?:\D|$)/);
     return match ? match[1] : undefined;
   } catch {
     return undefined;
@@ -201,10 +214,17 @@ export async function discoverAllEnvironments(): Promise<PythonEnvironment[]> {
 
   environments.push(...condaEnvs, ...venvs, ...systemEnvs);
 
-  // Remove duplicates by path
+  // Remove duplicates by path (resolve symlinks for accurate comparison)
   const seen = new Set<string>();
   return environments.filter((env) => {
-    const normalizedPath = env.path.toLowerCase();
+    let resolvedPath: string;
+    try {
+      resolvedPath = fs.realpathSync(env.path);
+    } catch {
+      // If path cannot be resolved, use original path
+      resolvedPath = env.path;
+    }
+    const normalizedPath = resolvedPath.toLowerCase();
     if (seen.has(normalizedPath)) {
       return false;
     }
@@ -215,12 +235,15 @@ export async function discoverAllEnvironments(): Promise<PythonEnvironment[]> {
 
 /**
  * Helper function to run a command and return stdout
+ * Uses 30s timeout to support slow systems or many conda environments
  */
 function runCommand(command: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile(command, args, { timeout: 10000 }, (error, stdout) => {
+    execFile(command, args, { timeout: 30000 }, (error, stdout, stderr) => {
       if (error) {
-        reject(error);
+        // Include stderr in error for better debugging
+        const errorMessage = stderr ? `${error.message}: ${stderr}` : error.message;
+        reject(new Error(errorMessage));
       } else {
         resolve(stdout);
       }
@@ -248,11 +271,16 @@ export function getEnvironmentDisplayName(pythonPath: string): string {
   }
 
   // Check if it's a venv (look for common venv folder names in the path)
-  const venvIndicators = ['.venv', 'venv', 'env', '.env'];
+  // Note: '.env' is excluded as it's commonly used for environment variable files
+  const venvIndicators = ['.venv', 'venv', 'env'];
   for (const indicator of venvIndicators) {
     const indicatorIndex = parts.indexOf(indicator);
     if (indicatorIndex !== -1) {
-      return `venv: ${indicator}`;
+      // Verify it's followed by bin/Scripts (typical venv structure)
+      const nextSegment = parts[indicatorIndex + 1];
+      if (!nextSegment || nextSegment === 'bin' || nextSegment === 'Scripts') {
+        return `venv: ${indicator}`;
+      }
     }
   }
 

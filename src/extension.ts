@@ -11,6 +11,7 @@ import {
 
 // Status bar item for showing current Python environment
 let pythonStatusBarItem: vscode.StatusBarItem;
+let statusBarUpdateTimer: ReturnType<typeof setTimeout> | undefined;
 
 /**
  * Updates the status bar item with the current Python environment
@@ -25,6 +26,36 @@ function updatePythonStatusBar(): void {
 }
 
 /**
+ * Debounced version of updatePythonStatusBar to avoid excessive updates
+ */
+function updatePythonStatusBarDebounced(): void {
+  if (statusBarUpdateTimer) {
+    clearTimeout(statusBarUpdateTimer);
+  }
+  statusBarUpdateTimer = setTimeout(() => {
+    updatePythonStatusBar();
+  }, 200);
+}
+
+/**
+ * Gets an icon for the environment source type
+ */
+function getEnvironmentIcon(source: PythonEnvironment['source']): string {
+  switch (source) {
+    case 'vscode-python':
+      return '$(extensions)';
+    case 'conda':
+      return '$(package)';
+    case 'venv':
+      return '$(folder-library)';
+    case 'system':
+      return '$(terminal)';
+    default:
+      return '$(symbol-misc)';
+  }
+}
+
+/**
  * Called when your extension is activated.
  * @param context VS Code extension context
  */
@@ -35,11 +66,11 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(pythonStatusBarItem);
   updatePythonStatusBar();
 
-  // Listen for configuration changes to update status bar
+  // Listen for configuration changes to update status bar (debounced)
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('netcdfViewer.pythonPath')) {
-        updatePythonStatusBar();
+        updatePythonStatusBarDebounced();
       }
     })
   );
@@ -109,9 +140,9 @@ export function activate(context: vscode.ExtensionContext): void {
       async () => discoverAllEnvironments()
     );
 
-    // Build QuickPick items
+    // Build QuickPick items with icons
     const items: (vscode.QuickPickItem & { env?: PythonEnvironment })[] = environments.map((env) => ({
-      label: env.name,
+      label: `${getEnvironmentIcon(env.source)} ${env.name}`,
       description: env.path,
       detail: env.source === 'vscode-python' ? '$(star) Recommended - from VS Code Python extension' : undefined,
       env,
@@ -132,7 +163,10 @@ export function activate(context: vscode.ExtensionContext): void {
     });
 
     const selected = await vscode.window.showQuickPick(items, {
-      placeHolder: 'Select a Python environment for NetCDF Viewer',
+      placeHolder:
+        environments.length === 0
+          ? 'No Python environments found. Please select or enter a Python path.'
+          : 'Select a Python environment for NetCDF Viewer',
       matchOnDescription: true,
     });
 
