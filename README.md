@@ -118,13 +118,26 @@ conda activate netcdf-viewer
 
 ### Configuration
 
-If VS Code doesn't find Python automatically, set the path in your settings:
+NetCDF Viewer automatically detects Python environments and shows the current selection in the **status bar** (bottom right). Click on it to change environments at any time.
 
-1. Open Command Palette (`Ctrl+Shift+P`)
-2. Run "Select Python Environment for NetCDF Viewer"
-3. Choose your Python executable
+**Automatic Environment Detection:**
 
-Or manually in `settings.json`:
+The extension discovers Python environments in this order:
+
+1. **VS Code Python Extension** — If you have the [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python) installed, it uses your selected interpreter (recommended)
+2. **Conda environments** — Detects all conda/miniconda environments
+3. **Workspace virtual environments** — Finds `.venv`, `venv`, `env` folders in your workspace
+4. **System Python** — Falls back to `python` or `python3` in PATH
+
+**To select a Python environment:**
+
+1. Click the Python indicator in the status bar, **or**
+2. Open Command Palette (`Ctrl+Shift+P`) → "Select Python Environment for NetCDF Viewer"
+3. Choose from discovered environments, browse manually, or enter a custom path
+
+The extension validates that `xarray` and `netCDF4` are installed and warns you if they're missing.
+
+**Manual configuration** in `settings.json`:
 
 ```json
 "netcdfViewer.pythonPath": "/path/to/python"
