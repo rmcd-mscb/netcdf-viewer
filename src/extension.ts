@@ -19,7 +19,7 @@ function updatePythonStatusBar(): void {
   const config = vscode.workspace.getConfiguration('netcdfViewer');
   const pythonPath = config.get<string>('pythonPath', 'python');
   const displayName = getEnvironmentDisplayName(pythonPath);
-  pythonStatusBarItem.text = `$(symbol-misc) ${displayName}`;
+  pythonStatusBarItem.text = `$(beaker) NC: ${displayName}`;
   pythonStatusBarItem.tooltip = `NetCDF Viewer Python: ${pythonPath}\nClick to change`;
   pythonStatusBarItem.show();
 }

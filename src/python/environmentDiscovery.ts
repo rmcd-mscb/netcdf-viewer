@@ -73,6 +73,9 @@ export async function discoverCondaEnvironments(): Promise<PythonEnvironment[]> 
 
     if (info.envs && Array.isArray(info.envs)) {
       for (const envPath of info.envs) {
+        if (typeof envPath !== 'string') {
+          continue;
+        }
         const pythonPath =
           process.platform === 'win32' ? path.join(envPath, 'python.exe') : path.join(envPath, 'bin', 'python');
 
@@ -215,7 +218,7 @@ export async function discoverAllEnvironments(): Promise<PythonEnvironment[]> {
  */
 function runCommand(command: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile(command, args, { timeout: 10000 }, (error, stdout, stderr) => {
+    execFile(command, args, { timeout: 10000 }, (error, stdout) => {
       if (error) {
         reject(error);
       } else {
@@ -233,9 +236,10 @@ export function getEnvironmentDisplayName(pythonPath: string): string {
     return pythonPath;
   }
 
+  const parts = pythonPath.split(path.sep);
+
   // Check if it's in a conda environment
   if (pythonPath.includes('conda') || pythonPath.includes('miniconda') || pythonPath.includes('anaconda')) {
-    const parts = pythonPath.split(path.sep);
     const envsIndex = parts.indexOf('envs');
     if (envsIndex !== -1 && parts[envsIndex + 1]) {
       return `conda: ${parts[envsIndex + 1]}`;
@@ -243,18 +247,21 @@ export function getEnvironmentDisplayName(pythonPath: string): string {
     return 'conda: base';
   }
 
-  // Check if it's a venv
+  // Check if it's a venv (look for common venv folder names in the path)
   const venvIndicators = ['.venv', 'venv', 'env', '.env'];
   for (const indicator of venvIndicators) {
-    if (pythonPath.includes(path.sep + indicator + path.sep)) {
+    const indicatorIndex = parts.indexOf(indicator);
+    if (indicatorIndex !== -1) {
       return `venv: ${indicator}`;
     }
   }
 
-  // Return the last directory name or the path itself
-  const parts = pythonPath.split(path.sep);
-  if (parts.length >= 2) {
-    return parts[parts.length - 2];
+  // Skip 'bin' or 'Scripts' folders to get the actual environment name
+  const skipFolders = ['bin', 'Scripts'];
+  for (let i = parts.length - 2; i >= 0; i--) {
+    if (!skipFolders.includes(parts[i]) && parts[i] !== '') {
+      return parts[i];
+    }
   }
 
   return pythonPath;
