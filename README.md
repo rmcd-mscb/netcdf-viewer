@@ -90,20 +90,60 @@
 
 This extension uses Python (via [xarray](https://xarray.dev/) and [netCDF4](https://unidata.github.io/netcdf4-python/)) to parse NetCDF files.
 
-**You must have:**
+**Requirements:**
 
-- Python 3.7+
-- `xarray` and `netCDF4` installed in your Python environment
+- Python 3.8 or higher
+- `xarray` and `netCDF4` packages
 
-If you use a custom Python path, set it in your VS Code settings:
+### Installation Options
 
-- Select **File > Preferences > Settings** (or `Ctrl+,`)
-- Search for `netcdfViewer.pythonPath`
-- Set the path to your Python executable:
+**Using pip:**
 
-```markdown
+```sh
+pip install xarray netCDF4
+```
+
+**Using conda:**
+
+```sh
+conda install -c conda-forge xarray netCDF4
+```
+
+**Using the provided environment file:**
+
+```sh
+conda env create -f environment.yml
+conda activate netcdf-viewer
+```
+
+### Configuration
+
+If VS Code doesn't find Python automatically, set the path in your settings:
+
+1. Open Command Palette (`Ctrl+Shift+P`)
+2. Run "Select Python Environment for NetCDF Viewer"
+3. Choose your Python executable
+
+Or manually in `settings.json`:
+
+```json
 "netcdfViewer.pythonPath": "/path/to/python"
 ```
+
+### Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `netcdfViewer.pythonPath` | `python` | Path to Python executable |
+| `netcdfViewer.sampleSize` | `10` | Number of sample values to display per variable (1-1000) |
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| "Python, xarray, or netCDF4 not found" | Ensure packages are installed and `pythonPath` is set correctly |
+| Extension doesn't detect Python | Use the "Select Python Environment" command |
+| Large files are slow | This is normal; consider using a subset of your data |
 
 ---
 

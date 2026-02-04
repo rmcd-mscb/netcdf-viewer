@@ -106,10 +106,10 @@ export class NetCDFTreeProvider implements vscode.TreeDataProvider<NetCDFTreeIte
       );
     }
 
-    // Show sample data children
+    // Show sample data children (sample size is configured via netcdfViewer.sampleSize)
     if (element.contextValue === 'sample' && element.data) {
       const varData = element.data as NamedVariable;
-      const sampleData = Array.isArray(varData.sample_data) ? varData.sample_data.slice(0, 10) : [];
+      const sampleData = Array.isArray(varData.sample_data) ? varData.sample_data : [];
       return sampleData.map((v, i) => new NetCDFTreeItem(`[${i}]: ${v}`, vscode.TreeItemCollapsibleState.None));
     }
 

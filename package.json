@@ -55,14 +55,14 @@
       "explorer/context": [
         {
           "command": "netcdf-viewer.openFile",
-          "when": "resourceExtname == .nc",
+          "when": "resourceExtname =~ /^\\.(nc|nc4|cdf|h5)$/",
           "group": "navigation"
         }
       ],
       "editor/title": [
         {
           "command": "netcdf-viewer.openFile",
-          "when": "resourceExtname == .nc",
+          "when": "resourceExtname =~ /^\\.(nc|nc4|cdf|h5)$/",
           "group": "navigation"
         }
       ]
@@ -75,6 +75,13 @@
           "type": "string",
           "default": "python",
           "description": "Path to the Python interpreter with xarray and netCDF4 installed."
+        },
+        "netcdfViewer.sampleSize": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Number of sample values to display for each variable (1-1000)."
         }
       }
     }
