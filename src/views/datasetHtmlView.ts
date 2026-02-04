@@ -104,7 +104,7 @@ export function getDatasetHtml(
   <html>
   <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource};">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline';">
     <style>
       body { font-family: sans-serif; padding: 16px; }
       summary { font-weight: bold; cursor: pointer; }

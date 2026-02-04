@@ -5,7 +5,17 @@
  * @returns Escaped string safe for HTML insertion
  */
 export function escapeHtml(unsafe: unknown): string {
-  const str = String(unsafe ?? '');
+  let str: string;
+  if (unsafe === null) {
+    str = 'null';
+  } else if (unsafe === undefined) {
+    str = 'undefined';
+  } else if (typeof unsafe === 'object') {
+    // Handle arrays and objects by JSON-stringifying them
+    str = JSON.stringify(unsafe);
+  } else {
+    str = String(unsafe);
+  }
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
