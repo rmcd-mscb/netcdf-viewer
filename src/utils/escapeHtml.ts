@@ -11,8 +11,12 @@ export function escapeHtml(unsafe: unknown): string {
   } else if (unsafe === undefined) {
     str = 'undefined';
   } else if (typeof unsafe === 'object') {
-    // Handle arrays and objects by JSON-stringifying them
-    str = JSON.stringify(unsafe);
+    // Handle arrays and objects; JSON.stringify may throw on circular or non-serializable values
+    try {
+      str = JSON.stringify(unsafe);
+    } catch {
+      str = '[Object]';
+    }
   } else {
     str = String(unsafe);
   }

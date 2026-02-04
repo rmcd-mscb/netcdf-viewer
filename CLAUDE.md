@@ -65,3 +65,7 @@ src/
 - `inspect_netcdf.py` - Python script for reading NetCDF files
 - `package.json` - Extension manifest and contribution points
 - `webpack.config.js` - Build configuration
+
+## Planned Features
+
+- **CF Compliance Checker** - See `docs/cf-compliance-checker.md` and issue #14

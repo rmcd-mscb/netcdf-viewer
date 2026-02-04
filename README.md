@@ -93,20 +93,20 @@ This extension uses Python (via [xarray](https://xarray.dev/) and [netCDF4](http
 **Requirements:**
 
 - Python 3.8 or higher
-- `xarray`, `netCDF4`, and `numpy` packages
+- `xarray` and `netCDF4` packages
 
 ### Installation Options
 
 **Using pip:**
 
 ```sh
-pip install xarray netCDF4 numpy
+pip install xarray netCDF4
 ```
 
 **Using conda:**
 
 ```sh
-conda install -c conda-forge xarray netCDF4 numpy
+conda install -c conda-forge xarray netCDF4
 ```
 
 **Using the provided environment file:**
@@ -129,6 +129,13 @@ Or manually in `settings.json`:
 ```json
 "netcdfViewer.pythonPath": "/path/to/python"
 ```
+
+### Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `netcdfViewer.pythonPath` | `python` | Path to Python executable |
+| `netcdfViewer.sampleSize` | `10` | Number of sample values to display per variable (1-1000) |
 
 ### Troubleshooting
 

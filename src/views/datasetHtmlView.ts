@@ -103,6 +103,9 @@ const CSS_STYLES = `
 /** Maximum indent level supported by CSS classes */
 const MAX_INDENT = 6;
 
+/** Maximum number of array elements to display (prevents UI overload) */
+const MAX_ARRAY_DISPLAY = 100;
+
 /**
  * Returns the appropriate CSS class for a given indent level.
  */
@@ -155,11 +158,8 @@ export function getDatasetHtml(
 
     // Special handling for sample_data label
     let displayLabel = escapeHtml(label);
-    if (label === 'sample_data' && Array.isArray(node) && parent && (parent.shape || parent.dims)) {
-      const shape: number[] =
-        (parent.shape as number[]) ||
-        ((parent.dims as string[])?.map((d: string) => (parent[d] as number[])?.length || 0) ?? []);
-      const sampleSlice = getSampleSlice(shape, node.length);
+    if (label === 'sample_data' && Array.isArray(node) && parent?.shape) {
+      const sampleSlice = getSampleSlice(parent.shape as number[], node.length);
       displayLabel = `sample_data <span class="val">${escapeHtml(sampleSlice)}</span>`;
     }
 
@@ -192,17 +192,22 @@ export function getDatasetHtml(
       </details>`;
     }
 
-    // For arrays, show values
+    // For arrays, show values (limited to prevent UI overload)
     if (Array.isArray(node)) {
-      const preview = node
+      const limitedNode = node.slice(0, MAX_ARRAY_DISPLAY);
+      const truncated = node.length > MAX_ARRAY_DISPLAY;
+      const preview = limitedNode
         .map((v, i) => {
           const valCls = valueClass(v);
           return `<div class="row"><span class="index">[${i}]:</span> <span class="${valCls}">${escapeHtml(v)}</span></div>`;
         })
         .join('');
+      const truncatedNote = truncated
+        ? `<div class="row"><span class="val-null">... and ${node.length - MAX_ARRAY_DISPLAY} more items</span></div>`
+        : '';
       return `<details class="${indentCls}">
         <summary><span class="${labelClass}">${displayLabel}</span></summary>
-        ${preview}
+        ${preview}${truncatedNote}
       </details>`;
     }
 
