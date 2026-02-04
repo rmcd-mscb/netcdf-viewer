@@ -83,10 +83,26 @@ netcdf-viewer/
   npm run compile
   ```
 
-- **Run the extension in VS Code:**
+- **Run the extension in VS Code (debugger):**
 
   1. Press `F5` in VS Code to launch a new Extension Development Host.
   2. Use the Command Palette (`Ctrl+Shift+P`) to find and run your extension commands.
+
+- **Package and install locally (without debugger):**
+
+  ```sh
+  npm run vsce:install
+  ```
+
+  This compiles the extension, packages it as a `.vsix` file, and installs it in your VS Code. Reload the window (`Ctrl+Shift+P` → "Reload Window") to use the updated extension.
+
+- **Package only (for distribution):**
+
+  ```sh
+  npm run vsce:package
+  ```
+
+  Creates `netcdf-viewer.vsix` in the project root.
 
 - **Run tests:**
 
