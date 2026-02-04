@@ -6,6 +6,28 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+### Added
+
+- Improved Python environment selection with automatic discovery (#15)
+  - Integrates with VS Code Python extension to use the already-selected interpreter
+  - Auto-discovers conda environments, workspace virtual environments, and system Python
+  - New QuickPick dropdown replaces file browser for easier selection
+  - Status bar item shows current Python environment (click to change)
+  - Validates dependencies before accepting selection
+- Progress notification while loading NetCDF files (#13)
+- Configurable sample size setting `netcdfViewer.sampleSize` (1-1000, default 10) (#12)
+- VS Code theme support for HTML view using CSS variables for light/dark compatibility (#13)
+
+### Changed
+
+- Python environment selector now shows friendly environment names instead of raw paths
+- HTML view now uses CSS classes instead of inline styles for cleaner, maintainable code
+- Improved HTML view formatting with type-specific styling for sections, variables, attributes, and values
+
+### Fixed
+
+- Context menu now correctly shows for all supported extensions (.nc, .nc4, .cdf, .h5) (#12)
+
 ## [0.0.5] - 2025-06-06
 
 ### Added

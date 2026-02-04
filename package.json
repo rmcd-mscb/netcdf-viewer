@@ -16,9 +16,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:netcdf-viewer.openFile",
-    "onCommand:netcdf-viewer.selectPythonEnv",
-    "onCommand:netcdf-viewer.showHtmlView"
+    "onStartupFinished"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -93,7 +91,9 @@
     "package": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint src",
     "pretest": "npm run compile && npm run lint && npm run tsc",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "vsce:package": "npm run compile && vsce package --out netcdf-viewer.vsix",
+    "vsce:install": "npm run vsce:package && code --install-extension netcdf-viewer.vsix --force"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -103,6 +103,7 @@
     "@typescript-eslint/parser": "^8.33.1",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.1",

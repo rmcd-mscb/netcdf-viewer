@@ -18,7 +18,8 @@ netcdf-viewer/
 │   │   ├── datasetHtmlView.ts    # HTML view for dataset structure
 │   │   └── variableWebview.ts    # Chart.js webview for variable preview
 │   ├── python/
-│   │   └── inspector.ts          # Python script execution and dependency checks
+│   │   ├── inspector.ts          # Python script execution and dependency checks
+│   │   └── environmentDiscovery.ts # Python environment detection and discovery
 │   ├── utils/
 │   │   └── sampleSlice.ts        # Shared utility functions
 │   └── test/
@@ -41,6 +42,7 @@ netcdf-viewer/
 | `src/views/datasetHtmlView.ts` | Generates collapsible HTML view of dataset structure |
 | `src/views/variableWebview.ts` | Generates variable preview with Chart.js visualization |
 | `src/python/inspector.ts` | Executes Python script and checks dependencies |
+| `src/python/environmentDiscovery.ts` | Discovers Python environments (VS Code extension, conda, venv, system) |
 | `src/utils/sampleSlice.ts` | Shared `getSampleSlice()` utility function |
 | `inspect_netcdf.py` | Python script that uses xarray to extract NetCDF metadata |
 
@@ -81,10 +83,26 @@ netcdf-viewer/
   npm run compile
   ```
 
-- **Run the extension in VS Code:**
+- **Run the extension in VS Code (debugger):**
 
   1. Press `F5` in VS Code to launch a new Extension Development Host.
   2. Use the Command Palette (`Ctrl+Shift+P`) to find and run your extension commands.
+
+- **Package and install locally (without debugger):**
+
+  ```sh
+  npm run vsce:install
+  ```
+
+  This compiles the extension, packages it as a `.vsix` file, and installs it in your VS Code. Reload the window (`Ctrl+Shift+P` → "Reload Window") to use the updated extension.
+
+- **Package only (for distribution):**
+
+  ```sh
+  npm run vsce:package
+  ```
+
+  Creates `netcdf-viewer.vsix` in the project root.
 
 - **Run tests:**
 
