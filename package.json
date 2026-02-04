@@ -18,7 +18,8 @@
   "activationEvents": [
     "onCommand:netcdf-viewer.openFile",
     "onCommand:netcdf-viewer.selectPythonEnv",
-    "onCommand:netcdf-viewer.showHtmlView"
+    "onCommand:netcdf-viewer.showHtmlView",
+    "onCommand:netcdf-viewer.setSampleSize"
   ],
   "main": "./dist/extension.js",
   "contributes": {
