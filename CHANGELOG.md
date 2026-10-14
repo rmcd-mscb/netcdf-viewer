@@ -6,6 +6,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+### Added
+
+- `.nc`, `.nc4` and `.cdf` files now open in NetCDF Viewer by default (e.g. double-click in the Explorer) instead of the "binary file" warning.
+
 ## [0.0.5] - 2025-06-06
 
 ### Added
