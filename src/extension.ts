@@ -3,6 +3,7 @@ import { NetCDFDataset, StoredNetCDF, isInspectError } from './types';
 import { inspectNetCDFWithPython, checkPythonDependencies } from './python/inspector';
 import { NetCDFTreeProvider } from './providers/NetCDFTreeProvider';
 import { showDatasetHtmlView } from './views/datasetHtmlView';
+import { NetCDFEditorProvider } from './editors/NetCDFEditorProvider';
 
 /**
  * Called when your extension is activated.
@@ -12,6 +13,9 @@ export function activate(context: vscode.ExtensionContext): void {
   // Register TreeDataProvider for NetCDF Explorer
   const provider = new NetCDFTreeProvider(context);
   vscode.window.registerTreeDataProvider('netcdfExplorer', provider);
+
+  // Open NetCDF files in the viewer by default (e.g. double-click in the Explorer)
+  context.subscriptions.push(NetCDFEditorProvider.register(context, () => provider.refresh()));
 
   // Register "Open NetCDF File…" command, accepting an optional URI
   const openCmd = vscode.commands.registerCommand('netcdf-viewer.openFile', async (uri?: vscode.Uri) => {

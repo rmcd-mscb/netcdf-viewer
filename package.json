@@ -22,6 +22,24 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "customEditors": [
+      {
+        "viewType": "netcdf-viewer.preview",
+        "displayName": "NetCDF Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.nc"
+          },
+          {
+            "filenamePattern": "*.nc4"
+          },
+          {
+            "filenamePattern": "*.cdf"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
     "commands": [
       {
         "command": "netcdf-viewer.selectPythonEnv",

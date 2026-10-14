@@ -28,7 +28,8 @@
    ![NetCDF Viewer Python Environment Selection](media/Select_python_env.gif)
 
 2. Open a NetCDF file in the editor.
-   - from the Welcome page, click on the "Open NetCDF File" button
+   - double-click a `.nc`, `.nc4`, or `.cdf` file in the Explorer — it opens in NetCDF Viewer by default (use **Reopen Editor With…** to switch to another editor)
+   - or from the Welcome page, click on the "Open NetCDF File" button
 
       ![NetCDF Viewer Open File Demo](media/Select_netcdf_file_1.gif)
 
@@ -153,7 +154,8 @@ Or manually in `settings.json`:
    Find the **NetCDF Explorer** in the Activity Bar or Side Bar.
 
 2. **Open a NetCDF file**  
-   - Right-click a `.nc` file in the Explorer and select **Open in NetCDF Viewer**  
+   - Double-click a `.nc`, `.nc4`, or `.cdf` file in the Explorer  
+   - Or right-click a `.nc` file in the Explorer and select **Open in NetCDF Viewer**  
    - Or use the command palette: `NetCDF Viewer: Open File…`
 
 3. **Browse your data**  
